@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#14324a">
+    <meta
+      name="description"
+      content="Jogo educacional sobre funções orgânicas: ajude Ben a encontrar produtos relacionados aos álcoois."
+    >
+    <title>Ben: Desafio Molecular no Supermercado</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <main id="app" class="app-shell">
+      <section id="start-screen" class="screen welcome-screen active" aria-labelledby="game-title">
+        <div class="welcome-copy">
+          <p class="eyebrow">QUÍMICA EM AÇÃO</p>
+          <h1 id="game-title">Ben: Desafio Molecular <span>no Supermercado</span></h1>
+          <p class="lead">
+            Explore os corredores, investigue rótulos e descubra onde as funções orgânicas aparecem no cotidiano.
+          </p>
+          <button id="start-button" class="primary-button" type="button">Começar desafio</button>
+          <button id="open-instructions-button" class="text-button" type="button">Como jogar</button>
+        </div>
+        <div class="hero-art" aria-hidden="true">
+          <div class="molecule-orbit"><span>OH</span><i></i><b>CH₃</b></div>
+          <div class="hero-spotlight"></div>
+          <img src="assets/ben.png" alt="" class="ben-hero">
+          <div class="hero-cart"><span></span><i></i><b></b></div>
+          <div class="hero-badge">MISSÃO 1 <small>ÁLCOOIS</small></div>
+        </div>
+      </section>
+
+      <section id="instructions-screen" class="screen info-screen" aria-labelledby="instructions-title">
+        <div class="screen-card wide-card">
+          <button class="back-button" type="button" data-back="start-screen" aria-label="Voltar à tela inicial">← Voltar</button>
+          <p class="eyebrow">MANUAL DE CAMPO</p>
+          <h2 id="instructions-title">Como jogar</h2>
+          <div class="instruction-grid">
+            <article>
+              <span class="step-number">01</span>
+              <h3>Explore</h3>
+              <p>Use <kbd>WASD</kbd> ou as <kbd>setas</kbd>. No celular, use o controle direcional.</p>
+            </article>
+            <article>
+              <span class="step-number">02</span>
+              <h3>Investigue</h3>
+              <p>Aproxime-se de um produto e pressione <kbd>Espaço</kbd>, <kbd>Enter</kbd> ou “Analisar”.</p>
+            </article>
+            <article>
+              <span class="step-number">03</span>
+              <h3>Complete</h3>
+              <p>Encontre os três itens corretos, leve o carrinho ao caixa e confira seu desempenho.</p>
+            </article>
+          </div>
+          <div class="score-rules">
+            <span><strong>+100</strong> produto correto</span>
+            <span><strong>−25</strong> escolha incorreta</span>
+            <span><strong>+150</strong> lista completa</span>
+            <span><strong>+tempo</strong> chegada rápida</span>
+          </div>
+          <p class="accessibility-note">
+            Pressione <kbd>P</kbd> ou <kbd>Esc</kbd> para pausar. Todo o conteúdo pode ser compreendido sem áudio.
+          </p>
+          <button id="instructions-continue-button" class="primary-button" type="button">Conhecer a missão</button>
+        </div>
+      </section>
+
+      <section id="mission-screen" class="screen mission-screen" aria-labelledby="mission-title">
+        <div class="mission-ben-panel" aria-hidden="true">
+          <div class="mission-number">01</div>
+          <img src="assets/ben.png" alt="" class="ben-mission">
+        </div>
+        <div class="mission-copy">
+          <p class="eyebrow">NOVA MISSÃO</p>
+          <h2 id="mission-title">Encontre produtos relacionados aos álcoois</h2>
+          <p>
+            Ajude Ben a encontrar produtos que contenham compostos pertencentes à função álcool ou que utilizem o
+            etanol como componente importante.
+          </p>
+          <div class="science-alert">
+            <span aria-hidden="true">i</span>
+            <p><strong>Atenção científica:</strong> produtos comerciais são misturas e não contêm necessariamente apenas uma substância.</p>
+          </div>
+          <div class="mission-target">
+            <span>OBJETIVO</span>
+            <strong>Encontre 3 produtos corretos</strong>
+          </div>
+          <button id="mission-start-button" class="primary-button" type="button">Entrar no supermercado</button>
+        </div>
+      </section>
+
+      <section id="game-screen" class="screen game-screen" aria-label="Supermercado">
+        <header class="game-hud">
+          <div class="brand-mini">
+            <span class="brand-mark">B</span>
+            <div><strong>DESAFIO MOLECULAR</strong><small>Missão 1 · Álcoois</small></div>
+          </div>
+          <div class="hud-stats" aria-live="polite">
+            <div><small>PONTOS</small><strong id="score-value">000</strong></div>
+            <div><small>TEMPO</small><strong id="timer-value">00:00</strong></div>
+            <div><small>ITENS</small><strong><span id="found-value">0</span>/3</strong></div>
+          </div>
+          <div class="hud-actions">
+            <button id="pause-button" class="icon-button" type="button" aria-label="Pausar jogo" title="Pausar (P)">Ⅱ</button>
+            <button id="mute-button" class="icon-button" type="button" aria-label="Silenciar áudio" aria-pressed="false" title="Som">♪</button>
+          </div>
+        </header>
+
+        <div class="game-layout">
+          <aside class="shopping-panel" aria-labelledby="shopping-title">
+            <p class="eyebrow">SUA MISSÃO</p>
+            <h2 id="shopping-title">Lista molecular</h2>
+            <p class="panel-hint">Procure produtos ligados à função álcool.</p>
+            <ol id="shopping-list" class="shopping-list">
+              <li data-item="alcohol-gel"><span>?</span><div><strong>Item misterioso</strong><small>Encontre no mercado</small></div></li>
+              <li data-item="perfume"><span>?</span><div><strong>Item misterioso</strong><small>Encontre no mercado</small></div></li>
+              <li data-item="antiseptic"><span>?</span><div><strong>Item misterioso</strong><small>Encontre no mercado</small></div></li>
+            </ol>
+            <div class="cart-progress" aria-label="Progresso do carrinho">
+              <div class="cart-mini" aria-hidden="true">🛒</div>
+              <div><span id="cart-dots"><i></i><i></i><i></i></span><small>Carrinho do Ben</small></div>
+            </div>
+          </aside>
+
+          <div id="canvas-wrap" class="canvas-wrap">
+            <canvas id="game-canvas" width="1200" height="675" aria-label="Área jogável do supermercado">
+              Seu navegador não oferece suporte ao Canvas 2D necessário para este jogo.
+            </canvas>
+            <p id="canvas-description" class="sr-only" aria-live="polite">
+              Ben está na entrada do supermercado. Explore os corredores para encontrar produtos.
+            </p>
+            <div id="interaction-prompt" class="interaction-prompt" hidden>
+              <kbd>E</kbd>
+              <span>Pressione para colocar no carrinho</span>
+            </div>
+            <div id="touch-controls" class="touch-controls" aria-label="Controles por toque">
+              <div class="d-pad">
+                <button type="button" data-direction="up" aria-label="Mover para cima">▲</button>
+                <button type="button" data-direction="left" aria-label="Mover para a esquerda">◀</button>
+                <button type="button" data-direction="down" aria-label="Mover para baixo">▼</button>
+                <button type="button" data-direction="right" aria-label="Mover para a direita">▶</button>
+              </div>
+              <button id="touch-interact-button" class="touch-action" type="button">Analisar</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div id="feedback-modal" class="modal-backdrop" hidden>
+        <section class="feedback-card" role="dialog" aria-modal="true" aria-labelledby="feedback-title">
+          <div id="feedback-status" class="feedback-status"><span id="feedback-icon">✓</span><strong id="feedback-result">ESCOLHA CORRETA</strong></div>
+          <h2 id="feedback-title">Produto</h2>
+          <p id="feedback-explanation" class="feedback-explanation"></p>
+          <dl class="chemistry-grid">
+            <div><dt>Composto relacionado</dt><dd id="feedback-compound"></dd></div>
+            <div><dt>Função / classificação</dt><dd id="feedback-function"></dd></div>
+            <div><dt>Fórmula molecular</dt><dd id="feedback-formula"></dd></div>
+            <div><dt>Estrutura condensada</dt><dd id="feedback-structure" class="chemical-structure"></dd></div>
+          </dl>
+          <p id="feedback-points" class="feedback-points"></p>
+          <button id="feedback-continue-button" class="primary-button" type="button">Continuar explorando</button>
+        </section>
+      </div>
+
+      <div id="pause-modal" class="modal-backdrop" hidden>
+        <section class="pause-card" role="dialog" aria-modal="true" aria-labelledby="pause-title">
+          <span class="pause-symbol" aria-hidden="true">Ⅱ</span>
+          <h2 id="pause-title">Jogo pausado</h2>
+          <p>O cronômetro também parou. Respire e volte quando quiser.</p>
+          <button id="resume-button" class="primary-button" type="button">Continuar</button>
+          <button id="restart-from-pause-button" class="text-button" type="button">Reiniciar missão</button>
+        </section>
+      </div>
+
+      <section id="complete-screen" class="screen complete-screen" aria-labelledby="complete-title">
+        <div class="complete-art" aria-hidden="true">
+          <div class="complete-burst"></div>
+          <img src="assets/ben.png" alt="" class="ben-complete">
+          <div class="full-cart">🛒<span>3</span></div>
+        </div>
+        <div class="complete-copy">
+          <p class="eyebrow">LISTA COMPLETA</p>
+          <h2 id="complete-title">Muito bem! Os três produtos estão no carrinho.</h2>
+          <p>Agora falta a última etapa: leve Ben até o caixa indicado no canto inferior direito do supermercado.</p>
+          <div class="completion-bonus"><span>+150</span><p><strong>Bônus de lista completa</strong><br>garantido ao finalizar no caixa</p></div>
+          <button id="go-to-checkout-button" class="primary-button" type="button">Ir para o caixa</button>
+        </div>
+      </section>
+
+      <section id="result-screen" class="screen result-screen" aria-labelledby="result-title">
+        <div class="result-card">
+          <div class="result-ben-wrap" aria-hidden="true">
+            <div id="molecule-rating" class="molecule-rating"><span>●</span><span>●</span><span>●</span></div>
+            <img src="assets/ben.png" alt="" class="ben-result">
+          </div>
+          <div class="result-copy">
+            <p class="eyebrow">MISSÃO CONCLUÍDA</p>
+            <h2 id="result-title">Excelente investigação!</h2>
+            <p id="result-message"></p>
+            <div class="result-score"><small>PONTUAÇÃO FINAL</small><strong id="final-score">000</strong></div>
+            <div class="result-breakdown">
+              <div><span>Produtos corretos</span><strong id="final-correct">3/3</strong></div>
+              <div><span>Escolhas incorretas</span><strong id="final-errors">0</strong></div>
+              <div><span>Tempo</span><strong id="final-time">00:00</strong></div>
+              <div><span>Bônus de tempo</span><strong id="final-time-bonus">+0</strong></div>
+            </div>
+            <div class="result-actions">
+              <button id="play-again-button" class="primary-button" type="button">Jogar novamente</button>
+              <button id="review-mission-button" class="text-button" type="button">Rever missão</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="js/data.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/game.js"></script>
+  </body>
+</html>
