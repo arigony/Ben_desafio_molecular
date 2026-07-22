@@ -137,9 +137,13 @@ H 2.060 -0.080 0.000`
         color: "#39bca7",
         icon: "gel",
         standId: "personal-care",
+        slot: 0,
+        displayX: 730,
+        displayY: 188,
+        interactionX: 730,
+        interactionY: 280,
         modelKeys: ["ethanol"],
-        x: 730,
-        y: 262
+        interactionRadius: 46
       },
       {
         id: "perfume",
@@ -170,9 +174,13 @@ H 2.060 -0.080 0.000`
         color: "#d268b4",
         icon: "perfume",
         standId: "hygiene-beauty",
+        slot: 0,
+        displayX: 245,
+        displayY: 188,
+        interactionX: 245,
+        interactionY: 280,
         modelKeys: ["ethanol"],
-        x: 245,
-        y: 262
+        interactionRadius: 46
       },
       {
         id: "vinegar",
@@ -203,9 +211,13 @@ H 2.060 -0.080 0.000`
         color: "#f0b54d",
         icon: "bottle",
         standId: "grocery",
+        slot: 0,
+        displayX: 225,
+        displayY: 503,
+        interactionX: 225,
+        interactionY: 375,
         modelKeys: ["aceticAcid"],
-        x: 225,
-        y: 372
+        interactionRadius: 46
       },
       {
         id: "antiseptic",
@@ -236,10 +248,14 @@ H 2.060 -0.080 0.000`
         color: "#487bd8",
         icon: "spray",
         standId: "personal-care",
+        slot: 1,
+        displayX: 920,
+        displayY: 188,
+        interactionX: 920,
+        interactionY: 280,
         modelKeys: ["ethanol", "isopropanol"],
         modelLabels: ["Etanol", "Isopropanol"],
-        x: 920,
-        y: 262
+        interactionRadius: 46
       },
       {
         id: "acetone",
@@ -270,9 +286,13 @@ H 2.060 -0.080 0.000`
         color: "#9a72d5",
         icon: "bottle",
         standId: "hygiene-beauty",
+        slot: 1,
+        displayX: 445,
+        displayY: 188,
+        interactionX: 445,
+        interactionY: 280,
         modelKeys: ["acetone"],
-        x: 445,
-        y: 262
+        interactionRadius: 46
       },
       {
         id: "oil",
@@ -304,9 +324,13 @@ H 2.060 -0.080 0.000`
         color: "#e2a01c",
         icon: "oil",
         standId: "grocery",
+        slot: 1,
+        displayX: 390,
+        displayY: 503,
+        interactionX: 390,
+        interactionY: 375,
         modelKeys: ["esterFragment"],
-        x: 390,
-        y: 372
+        interactionRadius: 46
       },
       {
         id: "salt",
@@ -338,9 +362,13 @@ H 2.060 -0.080 0.000`
         color: "#5aa3d6",
         icon: "box",
         standId: "grocery",
+        slot: 2,
+        displayX: 555,
+        displayY: 503,
+        interactionX: 555,
+        interactionY: 375,
         modelKeys: ["sodiumChloride"],
-        x: 555,
-        y: 372
+        interactionRadius: 46
       },
       {
         id: "soda",
@@ -372,9 +400,13 @@ H 2.060 -0.080 0.000`
         color: "#e45055",
         icon: "can",
         standId: "beverages",
+        slot: 0,
+        displayX: 790,
+        displayY: 503,
+        interactionX: 790,
+        interactionY: 375,
         modelKeys: [],
-        x: 790,
-        y: 372
+        interactionRadius: 46
       }
     ]
   };

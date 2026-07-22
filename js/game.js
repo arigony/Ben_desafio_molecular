@@ -103,7 +103,7 @@
       this.obstacles = [...this.stands, this.checkoutStand];
       this.standsById = new Map(this.stands.map((stand) => [stand.id, stand]));
       this.productsById = new Map(DATA.products.map((product) => [product.id, product]));
-      this.productsByDepth = [...DATA.products].sort((a, b) => a.y - b.y);
+      this.productsByDepth = [...DATA.products].sort((a, b) => a.displayY - b.displayY || a.slot - b.slot);
       this.productDisplays = this.buildProductDisplayPositions();
       this.checkout = { x: 1080, y: 607, radius: 80 };
       this.keys = new Set();
@@ -156,14 +156,12 @@
 
     buildProductDisplayPositions() {
       const displays = new Map();
-      this.stands.forEach((stand) => {
-        const products = DATA.products.filter((product) => product.standId === stand.id);
-        products.forEach((product) => {
-          displays.set(product.id, {
-            x: product.x,
-            y: stand.y + stand.h - 47,
-            standId: stand.id
-          });
+      DATA.products.forEach((product) => {
+        displays.set(product.id, {
+          x: product.displayX,
+          y: product.displayY,
+          standId: product.standId,
+          slot: product.slot
         });
       });
       return displays;
@@ -369,27 +367,27 @@
 
     getCartTransform(direction = this.lastDirection, benPosition = this.state.ben) {
       const offsets = {
-        right: { x: 96, y: 10, scaleX: 1, angle: -0.025 },
-        left: { x: -96, y: 10, scaleX: -1, angle: 0.025 },
-        up: { x: 0, y: -80, scaleX: 1, angle: 0 },
-        down: { x: 0, y: 80, scaleX: 1, angle: 0 }
+        right: { x: 56, y: 6, scaleX: 1, angle: -0.025 },
+        left: { x: -56, y: 6, scaleX: -1, angle: 0.025 },
+        up: { x: 0, y: -50, scaleX: 1, angle: 0 },
+        down: { x: 0, y: 50, scaleX: 1, angle: 0 }
       };
       const value = offsets[direction] || offsets.right;
       const x = benPosition.x + value.x;
       const y = benPosition.y + value.y;
-      const handOffset = direction === "right" ? 30 : direction === "left" ? -30 : 18;
+      const handOffset = direction === "right" ? 10 : direction === "left" ? -10 : 12;
       return {
         x,
         y,
         scaleX: value.scaleX,
         angle: value.angle,
         handle: {
-          start: { x: x - value.scaleX * 30, y: y - 17 },
+          start: { x: x - value.scaleX * 58, y: y - 22 },
           end: { x: benPosition.x + handOffset, y: benPosition.y - 36 }
         },
         wheels: [
-          { x: x - value.scaleX * 16, y: y + 23 },
-          { x: x + value.scaleX * 20, y: y + 23 }
+          { x: x - value.scaleX * 42, y: y + 24 },
+          { x: x + value.scaleX * 21, y: y + 24 }
         ],
         depth: y + 24
       };
@@ -430,8 +428,8 @@
       let closest = null;
       let closestDistance = Infinity;
       DATA.products.forEach((product) => {
-        const distance = Math.hypot(ben.x - product.x, ben.y - product.y);
-        if (distance < 86 && distance < closestDistance) {
+        const distance = Math.hypot(ben.x - product.interactionX, ben.y - product.interactionY);
+        if (distance <= product.interactionRadius && distance < closestDistance) {
           closest = product;
           closestDistance = distance;
         }
@@ -744,16 +742,16 @@
       try {
         const canvas = document.createElement("canvas");
         canvas.width = 420;
-        canvas.height = 330;
+        canvas.height = 285;
         const context = canvas.getContext("2d");
         context.drawImage(this.image, 0, 0, this.image.naturalWidth, this.image.naturalHeight, 0, 0, 420, 420);
-        const fade = context.createLinearGradient(0, 250, 0, 330);
+        const fade = context.createLinearGradient(0, 205, 0, 285);
         fade.addColorStop(0, "#fff");
         fade.addColorStop(0.72, "#fff");
         fade.addColorStop(1, "rgba(255,255,255,0)");
         context.globalCompositeOperation = "destination-in";
         context.fillStyle = fade;
-        context.fillRect(0, 0, 420, 330);
+        context.fillRect(0, 0, 420, 285);
         context.globalCompositeOperation = "source-over";
         this.benBodyCanvas = canvas;
       } catch (_error) {
@@ -934,14 +932,14 @@
     drawStandHighlights(ctx) {
       const stand = this.nearby ? this.standsById.get(this.nearby.standId) : null;
       if (!stand || this.overlayPaused || this.manualPaused) return;
-      const pulse = 0.72 + Math.sin(this.state.elapsed * 7) * 0.16;
+      const pulse = 0.32 + Math.sin(this.state.elapsed * 7) * 0.06;
       ctx.save();
       ctx.globalAlpha = pulse;
-      ctx.fillStyle = "rgba(255, 214, 91, 0.18)";
-      ctx.strokeStyle = "#f2ad28";
-      ctx.lineWidth = 5;
+      ctx.fillStyle = "rgba(255, 224, 122, 0.08)";
+      ctx.strokeStyle = "rgba(242, 173, 40, 0.72)";
+      ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.roundRect(stand.x - 8, stand.y - 23, stand.w + 27, stand.h + 39, 19);
+      ctx.roundRect(stand.x - 4, stand.y - 19, stand.w + 20, stand.h + 31, 17);
       ctx.fill();
       ctx.stroke();
       ctx.restore();
@@ -1035,19 +1033,20 @@
         const pulse = 0.72 + Math.sin(this.state.elapsed * 8) * 0.12;
         ctx.save();
         ctx.globalAlpha = pulse;
-        ctx.strokeStyle = product.color;
-        ctx.fillStyle = "rgba(255, 246, 186, 0.35)";
-        ctx.lineWidth = 4;
-        ctx.setLineDash([7, 6]);
+        ctx.strokeStyle = "#d58a00";
+        ctx.fillStyle = "rgba(255, 246, 186, 0.48)";
+        ctx.lineWidth = 3;
         ctx.beginPath();
-        ctx.moveTo(display.x, display.y + (product.y > display.y ? 36 : -36));
-        ctx.lineTo(product.x, product.y);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.beginPath();
-        ctx.ellipse(product.x, product.y, 42, 17, 0, 0, Math.PI * 2);
+        ctx.ellipse(product.interactionX, product.interactionY, 30, 11, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
+        ctx.fillStyle = "#b66a00";
+        ctx.beginPath();
+        ctx.moveTo(product.interactionX, product.interactionY - 15);
+        ctx.lineTo(product.interactionX - 7, product.interactionY - 5);
+        ctx.lineTo(product.interactionX + 7, product.interactionY - 5);
+        ctx.closePath();
+        ctx.fill();
         ctx.restore();
       }
 
@@ -1126,22 +1125,20 @@
 
     drawBenAndCart(ctx) {
       const cart = this.getCartTransform();
-      const benDepth = this.state.ben.y + 20;
       const centerX = (this.state.ben.x + cart.x) / 2;
-      const radiusX = Math.abs(this.state.ben.x - cart.x) / 2 + 48;
+      const radiusX = Math.abs(this.state.ben.x - cart.x) / 2 + 42;
       ctx.save();
       ctx.fillStyle = "rgba(15, 45, 52, 0.16)";
       ctx.beginPath();
-      ctx.ellipse(centerX, Math.max(this.state.ben.y, cart.y) + 24, radiusX, 15, 0, 0, Math.PI * 2);
+      ctx.ellipse(centerX, Math.max(this.state.ben.y, cart.y) + 23, radiusX, 14, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
-      if (cart.depth <= benDepth) {
-        this.drawCart(ctx, cart);
-        this.drawBen(ctx);
-      } else {
-        this.drawBen(ctx);
-        this.drawCart(ctx, cart);
-      }
+      this.drawCartHandle(ctx, cart);
+      this.drawWheel(ctx, cart.wheels[0].x, cart.wheels[0].y, this.state.cart.wheelAngle);
+      this.drawBen(ctx);
+      this.drawCartBasket(ctx, cart);
+      this.drawWheel(ctx, cart.wheels[1].x, cart.wheels[1].y, this.state.cart.wheelAngle);
+      this.drawCartProducts(ctx, cart);
       this.drawCelebration(ctx, cart);
     }
 
@@ -1182,29 +1179,7 @@
       ctx.restore();
     }
 
-    drawCart(ctx, transform = this.getCartTransform()) {
-      ctx.save();
-      ctx.translate(transform.x, transform.y);
-      ctx.rotate(transform.angle);
-      ctx.scale(transform.scaleX, 1);
-      ctx.strokeStyle = "#244a5e";
-      ctx.lineWidth = 5;
-      ctx.lineJoin = "round";
-      ctx.fillStyle = "rgba(72,157,178,.38)";
-      ctx.beginPath();
-      ctx.moveTo(-30, -25); ctx.lineTo(-22, 14); ctx.lineTo(25, 14); ctx.lineTo(32, -17); ctx.closePath();
-      ctx.fill(); ctx.stroke();
-      this.state.found.forEach((id, index) => {
-        const product = this.productsById.get(id);
-        if (!product) return;
-        ctx.save();
-        ctx.translate(-17 + index * 16, -8 - (index % 2) * 7);
-        ctx.scale(0.43, 0.43);
-        ctx.fillStyle = product.color;
-        this.drawProductIcon(ctx, product, 0, 0);
-        ctx.restore();
-      });
-      ctx.restore();
+    drawCartHandle(ctx, transform = this.getCartTransform()) {
       ctx.save();
       ctx.strokeStyle = "#244a5e";
       ctx.lineWidth = 5;
@@ -1214,7 +1189,39 @@
       ctx.lineTo(transform.handle.end.x, transform.handle.end.y);
       ctx.stroke();
       ctx.restore();
-      transform.wheels.forEach((wheel) => this.drawWheel(ctx, wheel.x, wheel.y, this.state.cart.wheelAngle));
+    }
+
+    drawCartBasket(ctx, transform = this.getCartTransform()) {
+      ctx.save();
+      ctx.translate(transform.x, transform.y);
+      ctx.rotate(transform.angle);
+      ctx.scale(transform.scaleX, 1);
+      ctx.strokeStyle = "#244a5e";
+      ctx.lineWidth = 5;
+      ctx.lineJoin = "round";
+      ctx.fillStyle = "rgba(72,157,178,.38)";
+      ctx.beginPath();
+      ctx.moveTo(-60, -30); ctx.lineTo(-48, 16); ctx.lineTo(25, 16); ctx.lineTo(34, -19); ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.restore();
+    }
+
+    drawCartProducts(ctx, transform = this.getCartTransform()) {
+      ctx.save();
+      ctx.translate(transform.x, transform.y);
+      ctx.rotate(transform.angle);
+      ctx.scale(transform.scaleX, 1);
+      this.state.found.forEach((id, index) => {
+        const product = this.productsById.get(id);
+        if (!product) return;
+        ctx.save();
+        ctx.translate(-42 + index * 20, -8 - (index % 2) * 7);
+        ctx.scale(0.43, 0.43);
+        ctx.fillStyle = product.color;
+        this.drawProductIcon(ctx, product, 0, 0);
+        ctx.restore();
+      });
+      ctx.restore();
     }
 
     drawBen(ctx) {
@@ -1227,64 +1234,73 @@
       const lean = moving ? (this.lastDirection === "left" ? -0.035 : this.lastDirection === "right" ? 0.035 : 0) : 0;
       let visualX = ben.x;
       let visualY = ben.y;
-      if (this.lastDirection === "right") visualX += 22;
-      else if (this.lastDirection === "left") visualX -= 22;
-      else if (this.lastDirection === "up") {
-        visualX += 8;
-        visualY -= 12;
-      } else {
-        visualX += 8;
-        visualY += 11;
-      }
+      if (this.lastDirection === "right") visualX += 12;
+      else if (this.lastDirection === "left") visualX -= 12;
+      else if (this.lastDirection === "up") visualY -= 20;
+      else visualY += 25;
       ctx.save();
-      ctx.fillStyle = "rgba(20,50,55,.19)";
-      ctx.beginPath(); ctx.ellipse(visualX, visualY + 20, 34, 12, 0, 0, Math.PI * 2); ctx.fill();
-      this.drawLeg(ctx, visualX - 11, visualY - 5, step * 10, "#244b5e");
-      this.drawLeg(ctx, visualX + 11, visualY - 5, -step * 10, "#183a4c");
-      ctx.translate(visualX, visualY - 56 + bob);
+      ctx.translate(visualX, visualY - 40 + bob);
       ctx.rotate(lean + (celebrating ? celebrationPhase * 0.025 : 0));
       if (celebrating) ctx.scale(1 + Math.abs(celebrationPhase) * 0.035, 1 + Math.abs(celebrationPhase) * 0.035);
       if (this.imageLoaded) {
         const source = this.benBodyCanvas || this.image;
-        ctx.drawImage(source, -88, -94, 176, this.benBodyCanvas ? 138 : 176);
+        ctx.drawImage(source, -75, -78, 150, this.benBodyCanvas ? 104 : 150);
       } else {
-        ctx.fillStyle = "#39b995"; ctx.beginPath(); ctx.arc(0, -25, 30, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#39b995"; ctx.beginPath(); ctx.arc(0, -22, 26, 0, Math.PI * 2); ctx.fill();
       }
       ctx.restore();
     }
 
-    drawLeg(ctx, x, y, stride, color) {
-      ctx.save();
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 13;
-      ctx.lineCap = "round";
-      ctx.beginPath();
-      ctx.moveTo(x, y - 8);
-      ctx.quadraticCurveTo(x + stride * 0.35, y + 6, x + stride, y + 24);
-      ctx.stroke();
-      ctx.strokeStyle = "#ecb53d";
-      ctx.lineWidth = 9;
-      ctx.beginPath();
-      ctx.moveTo(x + stride - 2, y + 25);
-      ctx.lineTo(x + stride + (stride >= 0 ? 9 : -9), y + 26);
-      ctx.stroke();
-      ctx.restore();
+    overlapArea(a, b) {
+      const width = Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x));
+      const height = Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+      return width * height;
+    }
+
+    getUnitVisualBounds() {
+      const cart = this.getCartTransform();
+      const left = Math.min(this.state.ben.x - 78, cart.x - 45);
+      const right = Math.max(this.state.ben.x + 78, cart.x + 45);
+      const top = Math.min(this.state.ben.y - 138, cart.y - 38);
+      const bottom = Math.max(this.state.ben.y + 32, cart.y + 34);
+      return { x: left, y: top, w: right - left, h: bottom - top };
+    }
+
+    getProximityCardPosition(product, cardW, cardH) {
+      const margin = 12;
+      const unitBox = this.getUnitVisualBounds();
+      const productBox = { x: product.displayX - 45, y: product.displayY - 43, w: 90, h: 86 };
+      const markerBox = { x: product.interactionX - 34, y: product.interactionY - 18, w: 68, h: 36 };
+      const vertical = product.displayY - cardH - 18;
+      const candidates = [
+        { x: product.displayX + 58, y: vertical },
+        { x: product.displayX - cardW - 58, y: vertical },
+        { x: product.displayX + 58, y: unitBox.y + unitBox.h + 8 },
+        { x: product.displayX - cardW - 58, y: unitBox.y + unitBox.h + 8 },
+        { x: product.displayX + 58, y: unitBox.y - cardH - 8 },
+        { x: product.displayX - cardW - 58, y: unitBox.y - cardH - 8 },
+        { x: product.interactionX - cardW / 2, y: product.interactionY + 38 },
+        { x: product.interactionX - cardW / 2, y: product.interactionY - cardH - 38 }
+      ];
+      let best = null;
+      candidates.forEach((candidate, index) => {
+        const x = Math.max(this.cameraBounds.left + margin, Math.min(this.cameraBounds.right - cardW - margin, candidate.x));
+        const y = Math.max(58, Math.min(WORLD.height - cardH - 16, candidate.y));
+        const box = { x, y, w: cardW, h: cardH };
+        const score =
+          this.overlapArea(box, productBox) * 50 +
+          this.overlapArea(box, unitBox) * 20 +
+          this.overlapArea(box, markerBox) * 8 +
+          index;
+        if (!best || score < best.score) best = { x, y, score };
+      });
+      return best;
     }
 
     drawProximityCard(ctx, product) {
       const cardW = product.id === "antiseptic" ? 270 : 235;
       const cardH = 118;
-      const ben = this.state.ben;
-      let x = product.x + 52;
-      if (x + cardW > this.cameraBounds.right - 12) x = product.x - cardW - 52;
-      x = Math.max(this.cameraBounds.left + 12, Math.min(this.cameraBounds.right - cardW - 12, x));
-      let y = product.y - cardH - 45;
-      if (y < 62) y = product.y + 48;
-      const benBox = { x: ben.x - 58, y: ben.y - 145, w: 116, h: 170 };
-      const cardBox = { x, y, w: cardW, h: cardH };
-      if (this.rectanglesOverlap(benBox, cardBox)) {
-        y = Math.min(WORLD.height - cardH - 16, product.y + 52);
-      }
+      const { x, y } = this.getProximityCardPosition(product, cardW, cardH);
       ctx.save();
       ctx.fillStyle = "rgba(8,35,49,.22)";
       ctx.beginPath(); ctx.roundRect(x + 6, y + 7, cardW, cardH, 14); ctx.fill();

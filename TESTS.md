@@ -10,7 +10,7 @@ Comando executado:
 node tests/run-tests.mjs
 ```
 
-Resultado final: **72/72 verificações aprovadas**.
+Resultado final: **80/80 verificações aprovadas**.
 
 A suíte executa `data.js`, `game.js` e `molecule3d.js` com DOM/Canvas simulados e também inspeciona a integração estática de HTML, CSS e JavaScript.
 
@@ -21,7 +21,9 @@ A suíte executa `data.js`, `game.js` e `molecule3d.js` com DOM/Canvas simulados
 | Respostas | correta sem pista (+100), com uma (+80), com duas (+60), incorreta (−15) e piso zero |
 | Revisão | acesso direto à resposta e explicação, nova resposta opcional, preservação da primeira tentativa e ausência de repontuação ou novos erros |
 | Estado | respostas por produto, itens revisados, reinício completo e execução com `mission.required` igual a 2 |
-| Movimento | separação Ben/carrinho, distâncias, profundidade, hitboxes, colisão do carrinho |
+| Movimento | integração Ben/carrinho a 45–60 px, quatro direções, hitboxes reduzidas e colisão do carrinho |
+| Produtos | posições visual e de interação, estande, slot, seleção individual dos oito produtos e zonas sem sobreposição |
+| Apresentação | marcador alinhado à interação, cartão reposicionado, destaque do produto e remoção das pernas procedurais |
 | Animação | `walkTime`, parada, `wheelAngle`, parada e sentidos opostos |
 | Química | fórmulas conferidas, subscritos HTML, classificações, símbolos funcionais e contagens XYZ dos seis modelos |
 | Feedback | rótulo explícito de produto comercial, natureza da mistura, escopo da representação e destaque não dependente apenas de cor |
@@ -116,7 +118,24 @@ Correções e regressões adicionadas:
 - `data-animation-active` acompanha o agendamento real do Canvas e fica `false` em investigação, lista móvel, pausa e resultado;
 - teste científico integral dos oito produtos e suas fórmulas, classificações e pertinência à missão.
 
-Resultado após as correções: **72/72 verificações automatizadas aprovadas**.
+Resultado após as correções: **80/80 verificações automatizadas aprovadas**.
+
+## Correção orientada pelo vídeo de teste
+
+O vídeo `Gravando 2026-07-22 155642.mp4` tem 24,37 segundos, 30 fps e resolução de 1280 × 976. No quadro de 1,0 segundo, Ben aparece diante do perfume enquanto o cartão informa **Vinagre**, confirmando que a posição desenhada e a posição de proximidade não compartilhavam a mesma fonte. O vídeo também evidencia as duas pernas procedurais soltas, a separação excessiva do carrinho e cartões sobrepostos ao conjunto.
+
+Correções verificadas pela suíte:
+
+- os oito produtos possuem `displayX`, `displayY`, `interactionX`, `interactionY`, `standId`, `slot` e raio explícito;
+- a detecção e o marcador usam as mesmas coordenadas de interação;
+- as oito zonas são disjuntas, inclusive Perfume × Vinagre;
+- cada centro de interação identifica somente seu próprio produto e estande;
+- Ben e carrinho ficaram separados por 45–60 px, sem sobreposição de hitboxes;
+- as pernas artificiais foram removidas e a cesta passou a ocultar a parte inferior do personagem;
+- a ordem de desenho é sombra, roda traseira, Ben, cesta, roda dianteira e produtos;
+- o cartão escolhe entre posições candidatas e não cobre Ben nem o produto ativo;
+- movimento nas quatro direções, colisão com estandes e animação das rodas permanecem funcionais.
+- o fluxo completo de proximidade e desenho dos oito produtos não emite `console.error`.
 
 ## Limitações declaradas
 

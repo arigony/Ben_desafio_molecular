@@ -77,6 +77,7 @@ class FakeElement {
 }
 
 function createHarness(options = {}) {
+  const testConsole = options.console || console;
   const elements = new Map();
   const element = (id) => {
     if (!elements.has(id)) elements.set(id, new FakeElement(id));
@@ -140,7 +141,7 @@ function createHarness(options = {}) {
       return rafRequests;
     },
     cancelAnimationFrame: (id) => cancelledFrames.push(id),
-    console,
+    console: testConsole,
     Set,
     Map,
     Math,
@@ -195,7 +196,7 @@ function createHarness(options = {}) {
 }
 
 function nearAndAnalyze(game, product) {
-  game.debugSetPosition(product.x, product.y + 50);
+  game.debugSetPosition(product.interactionX, product.interactionY);
   assert.equal(game.interact(), true);
 }
 
@@ -252,7 +253,7 @@ await test("1. KeyE abre o modal quando há produto próximo", () => {
   const { game, key, uiCalls, data } = createHarness();
   const product = data.products.find((item) => item.id === "alcohol-gel");
   game.start();
-  game.debugSetPosition(product.x, product.y + 50);
+  game.debugSetPosition(product.interactionX, product.interactionY);
   key("e", "KeyE");
   assert.deepEqual(uiCalls.analysis, ["alcohol-gel"]);
 });
@@ -269,21 +270,22 @@ await test("3. Espaço e Enter continuam funcionando", () => {
   const a = createHarness();
   const alcoholGel = a.data.products.find((item) => item.id === "alcohol-gel");
   a.game.start();
-  a.game.debugSetPosition(alcoholGel.x, alcoholGel.y + 50);
+  a.game.debugSetPosition(alcoholGel.interactionX, alcoholGel.interactionY);
   a.key(" ", "Space");
   assert.equal(a.uiCalls.analysis.at(-1), "alcohol-gel");
   const b = createHarness();
   const perfume = b.data.products.find((item) => item.id === "perfume");
   b.game.start();
-  b.game.debugSetPosition(perfume.x, perfume.y + 50);
+  b.game.debugSetPosition(perfume.interactionX, perfume.interactionY);
   b.key("Enter");
   assert.equal(b.uiCalls.analysis.at(-1), "perfume");
 });
 
 await test("4. um keydown não gera duas interações e repeat é ignorado", () => {
-  const { game, key, uiCalls } = createHarness();
+  const { game, key, uiCalls, data } = createHarness();
+  const perfume = data.products.find((item) => item.id === "perfume");
   game.start();
-  game.debugSetPosition(238, 316);
+  game.debugSetPosition(perfume.interactionX, perfume.interactionY);
   key("e", "KeyE");
   key("e", "KeyE", true);
   assert.equal(uiCalls.analysis.length, 1);
@@ -425,15 +427,15 @@ await test("16. Ben e carrinho não se sobrepõem nas quatro direções", () => 
   }
 });
 
-await test("17. distância entre centros respeita 80–105 lateral e 60–90 vertical", () => {
+await test("17. distância entre Ben e carrinho permanece entre 45 e 60 px", () => {
   const { game } = createHarness();
   for (const direction of ["left", "right"]) {
     const t = game.getCartTransform(direction, { x: 600, y: 350 });
-    assert.ok(Math.abs(t.x - 600) >= 80 && Math.abs(t.x - 600) <= 105);
+    assert.ok(Math.abs(t.x - 600) >= 45 && Math.abs(t.x - 600) <= 60);
   }
   for (const direction of ["up", "down"]) {
     const t = game.getCartTransform(direction, { x: 600, y: 350 });
-    assert.ok(Math.abs(t.y - 350) >= 60 && Math.abs(t.y - 350) <= 90);
+    assert.ok(Math.abs(t.y - 350) >= 45 && Math.abs(t.y - 350) <= 60);
   }
 });
 
@@ -590,7 +592,7 @@ await test("32. controles móveis continuam movimentando e analisando", () => {
   directions.find((b) => b.dataset.direction === "right").dispatch("pointerdown");
   assert.equal(game.state.ben.x, pausedX);
   game.togglePause();
-  game.debugSetPosition(product.x, product.y + 50);
+  game.debugSetPosition(product.interactionX, product.interactionY);
   element("touch-interact-button").dispatch("click");
   assert.equal(uiCalls.analysis.at(-1), "alcohol-gel");
 });
@@ -946,7 +948,7 @@ await test("60. colisões preservam estandes e todos os destinos continuam naveg
   assert.ok(points.length > 1000, "malha navegável excessivamente pequena");
   for (const product of data.products) {
     assert.ok(
-      points.some((point) => Math.hypot(point.x - product.x, point.y - product.y) < 82),
+      points.some((point) => Math.hypot(point.x - product.interactionX, point.y - product.interactionY) <= product.interactionRadius),
       `produto inacessível: ${product.id}`
     );
   }
@@ -961,7 +963,7 @@ await test("61. cada estande permite investigar ao menos um produto", () => {
   for (const stand of game.stands) {
     const product = data.products.find((item) => item.standId === stand.id);
     game.start();
-    game.debugSetPosition(product.x, product.y + (product.y < stand.y ? -50 : 50));
+    game.debugSetPosition(product.interactionX, product.interactionY);
     assert.equal(game.interact(), true, stand.id);
     assert.equal(uiCalls.analysis.at(-1), product.id, stand.id);
   }
@@ -1111,6 +1113,136 @@ await test("72. investigação preserva o acionador antes de ocultar o prompt", 
   const source = fs.readFileSync(path.join(root, "js", "game.js"), "utf8");
   const section = source.slice(source.indexOf("    analyzeProduct(product)"), source.indexOf("    cancelAnalysis()"));
   assert.ok(section.indexOf("this.ui.showAnalysis") < section.indexOf("this.ui.setPrompt(false)"));
+});
+
+await test("73. todos os produtos têm posição visual, interação, estande e slot explícitos", () => {
+  const { game, data } = createHarness();
+  for (const product of data.products) {
+    for (const key of ["displayX", "displayY", "interactionX", "interactionY"]) {
+      assert.equal(Number.isFinite(product[key]), true, `${product.id}.${key}`);
+    }
+    assert.equal(Number.isInteger(product.slot), true, `${product.id}.slot`);
+    const stand = game.standsById.get(product.standId);
+    assert.ok(stand, `${product.id} sem estande`);
+    assert.ok(product.displayX > stand.x && product.displayX < stand.x + stand.w, product.id);
+    assert.ok(product.displayY > stand.y && product.displayY < stand.y + stand.h, product.id);
+  }
+});
+
+await test("74. cada posição de interação identifica somente o produto correspondente", () => {
+  const { game, data } = createHarness();
+  const expected = {
+    perfume: "Perfume",
+    acetone: "Removedor à base de acetona",
+    "alcohol-gel": "Álcool em gel",
+    antiseptic: "Antisséptico alcoólico",
+    vinegar: "Vinagre",
+    oil: "Óleo vegetal",
+    salt: "Sal de cozinha",
+    soda: "Refrigerante"
+  };
+  game.start();
+  for (const product of data.products) {
+    game.debugSetPosition(product.interactionX, product.interactionY);
+    assert.equal(game.nearby?.id, product.id, product.id);
+    assert.equal(game.nearby?.name, expected[product.id], product.id);
+    assert.equal(game.debugSnapshot().nearbyStand, product.standId, product.id);
+  }
+});
+
+await test("75. zonas de interação não se sobrepõem entre produtos", () => {
+  const { data } = createHarness();
+  for (let left = 0; left < data.products.length; left += 1) {
+    for (let right = left + 1; right < data.products.length; right += 1) {
+      const a = data.products[left];
+      const b = data.products[right];
+      const distance = Math.hypot(a.interactionX - b.interactionX, a.interactionY - b.interactionY);
+      assert.ok(distance > a.interactionRadius + b.interactionRadius, `${a.id} × ${b.id}`);
+    }
+  }
+});
+
+await test("76. marcador e detecção usam as mesmas coordenadas de interação", () => {
+  const source = fs.readFileSync(path.join(root, "js", "game.js"), "utf8");
+  const nearbySection = source.slice(source.indexOf("    updateNearby()"), source.indexOf("    interact()"));
+  const productSection = source.slice(source.indexOf("    drawProduct(ctx"), source.indexOf("    drawProductIcon(ctx"));
+  assert.match(nearbySection, /product\.interactionX/);
+  assert.match(nearbySection, /product\.interactionY/);
+  assert.match(productSection, /product\.interactionX/);
+  assert.match(productSection, /product\.interactionY/);
+  assert.doesNotMatch(source, /product\.[xy]\b/);
+});
+
+await test("77. cartão de proximidade evita Ben e o produto ativo", () => {
+  const { game, data } = createHarness();
+  game.start();
+  for (const product of data.products) {
+    game.debugSetPosition(product.interactionX, product.interactionY);
+    const cardW = product.id === "antiseptic" ? 270 : 235;
+    const cardH = 118;
+    const position = game.getProximityCardPosition(product, cardW, cardH);
+    const card = { x: position.x, y: position.y, w: cardW, h: cardH };
+    const productBox = { x: product.displayX - 45, y: product.displayY - 43, w: 90, h: 86 };
+    assert.equal(game.overlapArea(card, productBox), 0, `produto ${product.id}`);
+    assert.equal(game.overlapArea(card, game.getUnitVisualBounds()), 0, `Ben ${product.id}`);
+  }
+});
+
+await test("78. composição remove pernas artificiais e preserva ordem integrada", () => {
+  const source = fs.readFileSync(path.join(root, "js", "game.js"), "utf8");
+  assert.doesNotMatch(source, /drawLeg\b/);
+  const section = source.slice(source.indexOf("    drawBenAndCart(ctx)"), source.indexOf("    drawCelebration(ctx"));
+  const rearWheel = section.indexOf("cart.wheels[0]");
+  const ben = section.indexOf("this.drawBen(ctx)");
+  const basket = section.indexOf("this.drawCartBasket(ctx, cart)");
+  const frontWheel = section.indexOf("cart.wheels[1]");
+  const products = section.indexOf("this.drawCartProducts(ctx, cart)");
+  assert.ok(rearWheel < ben && ben < basket && basket < frontWheel && frontWheel < products);
+  assert.match(source, /ctx\.drawImage\(source, -75, -78, 150,/);
+});
+
+await test("79. movimento nas quatro direções continua funcional sem atravessar estandes", () => {
+  const moves = {
+    up: [0, -1],
+    down: [0, 1],
+    left: [-1, 0],
+    right: [1, 0]
+  };
+  for (const [direction, [dx, dy]] of Object.entries(moves)) {
+    const { game } = createHarness();
+    game.start();
+    game.debugSetPosition(630, 350);
+    const before = { x: game.state.ben.x, y: game.state.ben.y };
+    const distance = game.moveBen(dx * 10, dy * 10, direction);
+    game.advanceMotion(distance, dx, dy, 0.05);
+    assert.ok(game.state.ben.x !== before.x || game.state.ben.y !== before.y, direction);
+    for (const stand of game.stands) {
+      assert.equal(game.rectanglesOverlap(game.getBenHitbox(), stand), false, `${direction}: Ben`);
+      assert.equal(game.rectanglesOverlap(game.getCartHitbox(), stand), false, `${direction}: carrinho`);
+    }
+  }
+});
+
+await test("80. fluxo de proximidade e desenho não gera erros no console", () => {
+  const errors = [];
+  const silentConsole = {
+    log() {},
+    info() {},
+    warn() {},
+    error(...args) { errors.push(args); }
+  };
+  const { game, data } = createHarness({ console: silentConsole });
+  game.start();
+  for (const product of data.products) {
+    game.debugSetPosition(product.interactionX, product.interactionY);
+    game.draw();
+  }
+  for (const [direction, dx, dy] of [["up", 0, -8], ["down", 0, 8], ["left", -8, 0], ["right", 8, 0]]) {
+    game.debugSetPosition(630, 350);
+    game.moveBen(dx, dy, direction);
+    game.draw();
+  }
+  assert.deepEqual(errors, []);
 });
 
 for (const result of results) {
