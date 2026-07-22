@@ -108,6 +108,9 @@
       this.checkout = { x: 1080, y: 607, radius: 80 };
       this.keys = new Set();
       this.touchDirections = new Set();
+      this.activeDirectionInputs = new Map();
+      this.directionButtons = [];
+      this.lastInteractionTrigger = -Infinity;
       this.lastFrame = performance.now();
       this.raf = null;
       this.running = false;
@@ -130,8 +133,15 @@
       this.state = this.freshState();
       this.bindInput();
       this.resizeCanvas();
-      window.addEventListener("resize", () => this.resizeCanvas());
+      const handleViewportChange = () => {
+        this.clearDirectionalInput();
+        this.resizeCanvas();
+      };
+      window.addEventListener("resize", handleViewportChange);
+      window.addEventListener("orientationchange", handleViewportChange);
+      window.visualViewport?.addEventListener("resize", handleViewportChange);
       document.addEventListener("visibilitychange", () => {
+        this.clearDirectionalInput();
         if (document.hidden && this.running && !this.manualPaused && !this.overlayPaused) this.togglePause(true);
       });
       if (benImageReady) prepareBenImage();
@@ -165,6 +175,53 @@
         });
       });
       return displays;
+    }
+
+    syncTouchDirections() {
+      this.touchDirections.clear();
+      for (const direction of this.activeDirectionInputs.values()) this.touchDirections.add(direction);
+    }
+
+    startDirection(direction, inputId, button) {
+      if (!this.running || this.manualPaused || this.overlayPaused || this.activeDirectionInputs.has(inputId)) return false;
+      this.activeDirectionInputs.set(inputId, direction);
+      this.syncTouchDirections();
+      const directionKeys = {
+        up: "arrowup", left: "arrowleft", down: "arrowdown", right: "arrowright"
+      };
+      this.nudgeFromKey(directionKeys[direction]);
+      button?.classList.add("is-active");
+      return true;
+    }
+
+    finishDirection(inputId) {
+      const direction = this.activeDirectionInputs.get(inputId);
+      if (!direction) return false;
+      this.activeDirectionInputs.delete(inputId);
+      this.syncTouchDirections();
+      if (!this.touchDirections.has(direction)) {
+        this.directionButtons
+          .filter((button) => button.dataset.direction === direction)
+          .forEach((button) => button.classList.remove("is-active"));
+      }
+      const movement = this.getMovementVector();
+      if (!movement.x && !movement.y) this.state.ben.isMoving = false;
+      return true;
+    }
+
+    clearDirectionalInput() {
+      this.activeDirectionInputs.clear();
+      this.touchDirections.clear();
+      this.directionButtons.forEach((button) => button.classList.remove("is-active"));
+      if (this.state?.ben) this.state.ben.isMoving = false;
+    }
+
+    triggerInteraction(event) {
+      event?.preventDefault?.();
+      const now = performance.now();
+      if (now - this.lastInteractionTrigger < 350) return false;
+      this.lastInteractionTrigger = now;
+      return this.interact();
     }
 
     bindInput() {
@@ -201,33 +258,56 @@
       window.addEventListener("keyup", (event) => this.keys.delete(event.key.toLowerCase()));
       window.addEventListener("blur", () => {
         this.keys.clear();
-        this.touchDirections.clear();
-        this.state.ben.isMoving = false;
+        this.clearDirectionalInput();
       });
-      document.querySelectorAll("[data-direction]").forEach((button) => {
-        const begin = (event) => {
+      this.directionButtons = [...document.querySelectorAll("[data-direction]")];
+      this.directionButtons.forEach((button) => {
+        const beginPointer = (event) => {
           event.preventDefault();
-          if (!this.running || this.manualPaused || this.overlayPaused) return;
           button.setPointerCapture?.(event.pointerId);
-          this.touchDirections.add(button.dataset.direction);
-          const directionKeys = {
-            up: "arrowup", left: "arrowleft", down: "arrowdown", right: "arrowright"
-          };
-          this.nudgeFromKey(directionKeys[button.dataset.direction]);
-          button.classList.add("is-active");
+          this.startDirection(button.dataset.direction, `pointer:${event.pointerId ?? "primary"}`, button);
         };
-        const end = (event) => {
+        const endPointer = (event) => {
           event.preventDefault();
-          this.touchDirections.delete(button.dataset.direction);
-          button.classList.remove("is-active");
+          this.finishDirection(`pointer:${event.pointerId ?? "primary"}`);
         };
-        button.addEventListener("pointerdown", begin);
-        button.addEventListener("pointerup", end);
-        button.addEventListener("pointercancel", end);
-        button.addEventListener("pointerleave", end);
+        const beginTouch = (event) => {
+          event.preventDefault();
+          if (window.PointerEvent) return;
+          for (const touch of event.changedTouches || []) {
+            this.startDirection(button.dataset.direction, `touch:${touch.identifier}`, button);
+          }
+        };
+        const endTouch = (event) => {
+          event.preventDefault();
+          if (window.PointerEvent) return;
+          const changedTouches = event.changedTouches || [];
+          if (!changedTouches.length) this.clearDirectionalInput();
+          for (const touch of changedTouches) this.finishDirection(`touch:${touch.identifier}`);
+        };
+        button.addEventListener("pointerdown", beginPointer);
+        button.addEventListener("pointerup", endPointer);
+        button.addEventListener("pointercancel", endPointer);
+        button.addEventListener("touchstart", beginTouch, { passive: false });
+        button.addEventListener("touchend", endTouch, { passive: false });
+        button.addEventListener("touchcancel", endTouch, { passive: false });
       });
-      document.getElementById("interaction-prompt").addEventListener("click", () => this.interact());
-      document.getElementById("touch-interact-button").addEventListener("click", () => this.interact());
+      const finishPointer = (event) => this.finishDirection(`pointer:${event.pointerId ?? "primary"}`);
+      const finishTouch = (event) => {
+        if (window.PointerEvent) return;
+        event.preventDefault();
+        for (const touch of event.changedTouches || []) this.finishDirection(`touch:${touch.identifier}`);
+      };
+      window.addEventListener("pointerup", finishPointer);
+      window.addEventListener("pointercancel", finishPointer);
+      window.addEventListener("touchend", finishTouch, { passive: false });
+      window.addEventListener("touchcancel", finishTouch, { passive: false });
+
+      document.getElementById("interaction-prompt").addEventListener("click", (event) => this.triggerInteraction(event));
+      const touchInteract = document.getElementById("touch-interact-button");
+      touchInteract.addEventListener("pointerup", (event) => this.triggerInteraction(event));
+      touchInteract.addEventListener("touchend", (event) => this.triggerInteraction(event), { passive: false });
+      touchInteract.addEventListener("click", (event) => this.triggerInteraction(event));
     }
 
     start() {
@@ -235,7 +315,8 @@
       this.sound.unlock();
       this.state = this.freshState();
       this.keys.clear();
-      this.touchDirections.clear();
+      this.clearDirectionalInput();
+      this.lastInteractionTrigger = -Infinity;
       this.running = true;
       this.manualPaused = false;
       this.overlayPaused = false;
@@ -466,8 +547,7 @@
       this.currentHintsUsed = 0;
       this.overlayPaused = true;
       this.keys.clear();
-      this.touchDirections.clear();
-      this.state.ben.isMoving = false;
+      this.clearDirectionalInput();
       this.ui.showAnalysis(product, this.state.answers.get(product.id) || null);
       this.ui.setPrompt(false);
       this.stopAnimationLoop();
@@ -602,8 +682,7 @@
       if (!this.running || this.manualPaused || this.currentAnalysis) return;
       this.listOpen = Boolean(open);
       this.keys.clear();
-      this.touchDirections.clear();
-      this.state.ben.isMoving = false;
+      this.clearDirectionalInput();
       this.overlayPaused = this.listOpen;
       if (this.listOpen) {
         this.stopAnimationLoop();
@@ -634,8 +713,7 @@
       if (!this.running || this.overlayPaused) return;
       this.manualPaused = typeof force === "boolean" ? force : !this.manualPaused;
       this.keys.clear();
-      this.touchDirections.clear();
-      this.state.ben.isMoving = false;
+      this.clearDirectionalInput();
       if (this.manualPaused) {
         this.ui.showPause();
         this.stopAnimationLoop();
@@ -691,7 +769,8 @@
       const nextDpr = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
       const dprChanged = nextDpr !== this.renderDpr;
       this.renderDpr = nextDpr;
-      this.portraitCamera = window.innerWidth <= 600 && window.innerHeight > window.innerWidth;
+      const viewportHeight = window.visualViewport?.height || window.innerHeight;
+      this.portraitCamera = window.innerWidth <= 600 && viewportHeight > window.innerWidth;
       if (this.portraitCamera) {
         this.logicalCanvasWidth = 600;
         this.logicalCanvasHeight = 800;

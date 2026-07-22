@@ -10,7 +10,7 @@ Comando executado:
 node tests/run-tests.mjs
 ```
 
-Resultado final: **80/80 verificações aprovadas**.
+Resultado final: **96/96 verificações aprovadas**.
 
 A suíte executa `data.js`, `game.js` e `molecule3d.js` com DOM/Canvas simulados e também inspeciona a integração estática de HTML, CSS e JavaScript.
 
@@ -29,6 +29,8 @@ A suíte executa `data.js`, `game.js` e `molecule3d.js` com DOM/Canvas simulados
 | Feedback | rótulo explícito de produto comercial, natureza da mistura, escopo da representação e destaque não dependente apenas de cor |
 | 3D | versão explícita da CDN, modal e fallback sem 3Dmol/WebGL |
 | Fluxo | controles móveis, botão Analisar, cronômetro pausado, caixa bloqueado e resultado final sem bônus paralelo |
+| Entrada móvel | detecção por `maxTouchPoints`/`ontouchstart`, classe `touch-device`, toque contínuo, multitoque, `pointercancel`, `touchcancel`, `blur`, rotação e `visibilitychange` |
+| Viewport móvel | altura por `visualViewport`, fallback `svh`/`dvh`, safe areas e Canvas contido em 390×844, 430×932, 844×390, 932×430, 412×915, 915×412 e 768×1024 |
 | Interface responsiva | HUD completo, gaveta móvel, painel desktop recolhível, foco preso/restaurado, safe areas, botões de 48 px, orientação e ponteiros coarse |
 | Cenário flat 3D | quatro estandes setorizados, caixa, produtos sobre prateleiras, destaque por proximidade e unidade Ben–carrinho |
 | Asset do Ben | WebP válido e menor, PNG preservado, dimensões intrínsecas, carregamento lazy e reutilização da imagem pelo Canvas |
@@ -118,7 +120,7 @@ Correções e regressões adicionadas:
 - `data-animation-active` acompanha o agendamento real do Canvas e fica `false` em investigação, lista móvel, pausa e resultado;
 - teste científico integral dos oito produtos e suas fórmulas, classificações e pertinência à missão.
 
-Resultado após as correções: **80/80 verificações automatizadas aprovadas**.
+Resultado após as correções: **96/96 verificações automatizadas aprovadas**.
 
 ## Correção orientada pelo vídeo de teste
 

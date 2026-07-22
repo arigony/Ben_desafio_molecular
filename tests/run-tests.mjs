@@ -16,9 +16,24 @@ async function test(name, fn) {
 }
 
 class FakeClassList {
-  add() {}
-  remove() {}
-  toggle() {}
+  constructor() {
+    this.values = new Set();
+  }
+  add(...names) {
+    names.forEach((name) => this.values.add(name));
+  }
+  remove(...names) {
+    names.forEach((name) => this.values.delete(name));
+  }
+  toggle(name, force) {
+    const enabled = force === undefined ? !this.values.has(name) : Boolean(force);
+    if (enabled) this.values.add(name);
+    else this.values.delete(name);
+    return enabled;
+  }
+  contains(name) {
+    return this.values.has(name);
+  }
 }
 
 function fakeContext() {
@@ -47,7 +62,9 @@ class FakeElement {
     this.dataset = {};
     this.listeners = new Map();
     this.classList = new FakeClassList();
-    this.style = {};
+    this.style = {
+      setProperty(name, value) { this[name] = value; }
+    };
     this.hidden = false;
     this.clientWidth = 1000;
     this.clientHeight = 560;
@@ -80,7 +97,14 @@ function createHarness(options = {}) {
   const testConsole = options.console || console;
   const elements = new Map();
   const element = (id) => {
-    if (!elements.has(id)) elements.set(id, new FakeElement(id));
+    if (!elements.has(id)) {
+      const created = new FakeElement(id);
+      if (id === "canvas-wrap") {
+        created.clientWidth = options.wrapWidth || 1000;
+        created.clientHeight = options.wrapHeight || 560;
+      }
+      elements.set(id, created);
+    }
     return elements.get(id);
   };
   const directions = ["up", "left", "down", "right"].map((direction) => {
@@ -104,6 +128,17 @@ function createHarness(options = {}) {
       windowListeners.get(type).push(handler);
     }
   };
+  if (options.pointerEvents) fakeWindow.PointerEvent = function PointerEvent() {};
+  if (options.visualViewportHeight) {
+    const visualListeners = new Map();
+    fakeWindow.visualViewport = {
+      height: options.visualViewportHeight,
+      addEventListener(type, handler) {
+        if (!visualListeners.has(type)) visualListeners.set(type, []);
+        visualListeners.get(type).push(handler);
+      }
+    };
+  }
   const fakeDocument = {
     hidden: false,
     getElementById: element,
@@ -183,6 +218,14 @@ function createHarness(options = {}) {
     for (const handler of windowListeners.get("keydown") || []) handler(event);
     return prevented;
   };
+  const dispatchWindow = (type, extras = {}) => {
+    const event = { preventDefault() {}, pointerId: 1, ...extras };
+    for (const handler of windowListeners.get(type) || []) handler(event);
+  };
+  const dispatchDocument = (type, extras = {}) => {
+    const event = { preventDefault() {}, ...extras };
+    for (const handler of documentListeners.get(type) || []) handler(event);
+  };
   return {
     game,
     uiCalls,
@@ -191,6 +234,9 @@ function createHarness(options = {}) {
     data: fakeWindow.BEN_GAME_DATA,
     element,
     fakeWindow,
+    fakeDocument,
+    dispatchWindow,
+    dispatchDocument,
     rafStats: () => ({ requests: rafRequests, cancelled: [...cancelledFrames] })
   };
 }
@@ -217,6 +263,48 @@ function createUIRenderingHarness() {
   const uiContext = vm.createContext({ window: uiWindow, document: createdDocument, requestAnimationFrame: () => 1, console });
   vm.runInContext(fs.readFileSync(path.join(root, "js", "ui.js"), "utf8"), uiContext, { filename: "ui.js" });
   return { instance: Object.create(uiWindow.BenUI.prototype), document: createdDocument };
+}
+
+function createMobileEnvironmentHarness({ maxTouchPoints = 0, touchFallback = false, innerHeight = 844, visualHeight = 0 } = {}) {
+  const rootElement = new FakeElement("html");
+  const windowListeners = new Map();
+  const visualListeners = new Map();
+  const mobileWindow = {
+    navigator: { maxTouchPoints },
+    innerHeight,
+    addEventListener(type, handler) {
+      if (!windowListeners.has(type)) windowListeners.set(type, []);
+      windowListeners.get(type).push(handler);
+    }
+  };
+  if (touchFallback) mobileWindow.ontouchstart = null;
+  if (visualHeight) {
+    mobileWindow.visualViewport = {
+      height: visualHeight,
+      addEventListener(type, handler) {
+        if (!visualListeners.has(type)) visualListeners.set(type, []);
+        visualListeners.get(type).push(handler);
+      }
+    };
+  }
+  const context = vm.createContext({
+    window: mobileWindow,
+    navigator: mobileWindow.navigator,
+    document: { documentElement: rootElement },
+    Math,
+    Number
+  });
+  vm.runInContext(fs.readFileSync(path.join(root, "js", "mobile.js"), "utf8"), context, { filename: "mobile.js" });
+  return {
+    rootElement,
+    mobileWindow,
+    dispatchWindow(type) {
+      for (const handler of windowListeners.get(type) || []) handler();
+    },
+    dispatchVisual(type) {
+      for (const handler of visualListeners.get(type) || []) handler();
+    }
+  };
 }
 
 function fakeNodeText(node) {
@@ -1243,6 +1331,188 @@ await test("80. fluxo de proximidade e desenho não gera erros no console", () =
     game.draw();
   }
   assert.deepEqual(errors, []);
+});
+
+await test("81. maxTouchPoints identifica toque e adiciona a classe touch-device", () => {
+  const { rootElement, mobileWindow } = createMobileEnvironmentHarness({ maxTouchPoints: 5, visualHeight: 790 });
+  assert.equal(rootElement.classList.contains("touch-device"), true);
+  assert.equal(rootElement.style["--app-viewport-height"], "790px");
+  assert.equal(mobileWindow.BenMobileEnvironment.touchDevice, true);
+});
+
+await test("82. ontouchstart funciona como fallback de detecção de toque", () => {
+  const { rootElement } = createMobileEnvironmentHarness({ touchFallback: true });
+  assert.equal(rootElement.classList.contains("touch-device"), true);
+});
+
+await test("83. pointerdown mantém movimento contínuo e pointerup para imediatamente", () => {
+  const { game, directions } = createHarness({ pointerEvents: true });
+  const right = directions.find((button) => button.dataset.direction === "right");
+  game.start();
+  game.debugSetPosition(630, 350);
+  right.dispatch("pointerdown", { pointerId: 3 });
+  const afterDown = game.state.ben.x;
+  game.update(0.1);
+  assert.ok(game.state.ben.x > afterDown);
+  right.dispatch("pointerup", { pointerId: 3 });
+  const afterUp = game.state.ben.x;
+  game.update(0.1);
+  assert.equal(game.state.ben.x, afterUp);
+  assert.equal(game.state.ben.isMoving, false);
+});
+
+await test("84. pointercancel e finalização na janela não deixam direção presa", () => {
+  const { game, directions, dispatchWindow } = createHarness({ pointerEvents: true });
+  const right = directions.find((button) => button.dataset.direction === "right");
+  game.start();
+  right.dispatch("pointerdown", { pointerId: 7 });
+  right.dispatch("pointercancel", { pointerId: 7 });
+  assert.equal(game.touchDirections.size, 0);
+  right.dispatch("pointerdown", { pointerId: 8 });
+  dispatchWindow("pointerup", { pointerId: 8 });
+  assert.equal(game.touchDirections.size, 0);
+});
+
+await test("85. touchstart mantém movimento e touchend encerra no fallback", () => {
+  const { game, directions } = createHarness();
+  const up = directions.find((button) => button.dataset.direction === "up");
+  game.start();
+  game.debugSetPosition(630, 350);
+  up.dispatch("touchstart", { changedTouches: [{ identifier: 10 }] });
+  const afterStart = game.state.ben.y;
+  game.update(0.1);
+  assert.ok(game.state.ben.y < afterStart);
+  up.dispatch("touchend", { changedTouches: [{ identifier: 10 }] });
+  const afterEnd = game.state.ben.y;
+  game.update(0.1);
+  assert.equal(game.state.ben.y, afterEnd);
+});
+
+await test("86. touchcancel limpa o movimento no fallback", () => {
+  const { game, directions } = createHarness();
+  const left = directions.find((button) => button.dataset.direction === "left");
+  game.start();
+  left.dispatch("touchstart", { changedTouches: [{ identifier: 11 }] });
+  assert.equal(game.touchDirections.has("left"), true);
+  left.dispatch("touchcancel", { changedTouches: [{ identifier: 11 }] });
+  assert.equal(game.touchDirections.size, 0);
+});
+
+await test("87. dois ponteiros são finalizados separadamente sem estado preso", () => {
+  const { game, directions } = createHarness({ pointerEvents: true });
+  const left = directions.find((button) => button.dataset.direction === "left");
+  const up = directions.find((button) => button.dataset.direction === "up");
+  game.start();
+  left.dispatch("pointerdown", { pointerId: 21 });
+  up.dispatch("pointerdown", { pointerId: 22 });
+  assert.deepEqual([...game.touchDirections].sort(), ["left", "up"]);
+  left.dispatch("pointerup", { pointerId: 21 });
+  assert.deepEqual([...game.touchDirections], ["up"]);
+  up.dispatch("pointerup", { pointerId: 22 });
+  assert.equal(game.touchDirections.size, 0);
+});
+
+await test("88. blur, resize e orientationchange limpam controles ativos", () => {
+  const { game, directions, dispatchWindow } = createHarness({ pointerEvents: true });
+  const down = directions.find((button) => button.dataset.direction === "down");
+  game.start();
+  down.dispatch("pointerdown", { pointerId: 31 });
+  dispatchWindow("blur");
+  assert.equal(game.touchDirections.size, 0);
+  down.dispatch("pointerdown", { pointerId: 32 });
+  dispatchWindow("orientationchange");
+  assert.equal(game.touchDirections.size, 0);
+  down.dispatch("pointerdown", { pointerId: 33 });
+  dispatchWindow("resize");
+  assert.equal(game.touchDirections.size, 0);
+});
+
+await test("89. visibilitychange limpa controles e pausa a animação", () => {
+  const { game, directions, fakeDocument, dispatchDocument } = createHarness({ pointerEvents: true });
+  game.start();
+  directions[0].dispatch("pointerdown", { pointerId: 41 });
+  fakeDocument.hidden = true;
+  dispatchDocument("visibilitychange");
+  assert.equal(game.touchDirections.size, 0);
+  assert.equal(game.manualPaused, true);
+  assert.equal(game.canvas.dataset.animationActive, "false");
+});
+
+await test("90. Analisar evita disparo duplicado de touchend seguido por click", () => {
+  const { game, data, element, uiCalls } = createHarness();
+  const product = data.products.find((item) => item.id === "perfume");
+  game.start();
+  game.debugSetPosition(product.interactionX, product.interactionY);
+  const analyze = element("touch-interact-button");
+  analyze.dispatch("touchend", { changedTouches: [{ identifier: 50 }] });
+  analyze.dispatch("click");
+  assert.deepEqual(uiCalls.analysis, ["perfume"]);
+});
+
+await test("91. Analisar não abre painel fora da zona correta", () => {
+  const { game, element, uiCalls } = createHarness({ pointerEvents: true });
+  game.start();
+  game.debugSetPosition(630, 350);
+  element("touch-interact-button").dispatch("pointerup", { pointerId: 51 });
+  assert.deepEqual(uiCalls.analysis, []);
+});
+
+await test("92. eventos de toque usam listeners não passivos e não dependem de pointerleave", () => {
+  const source = fs.readFileSync(path.join(root, "js", "game.js"), "utf8");
+  assert.match(source, /touchstart", beginTouch, \{ passive: false \}/);
+  assert.match(source, /touchend", endTouch, \{ passive: false \}/);
+  assert.match(source, /touchcancel", endTouch, \{ passive: false \}/);
+  assert.doesNotMatch(source, /addEventListener\("pointerleave"/);
+});
+
+await test("93. CSS mostra controles pela classe e bloqueia gestos concorrentes", () => {
+  const css = fs.readFileSync(path.join(root, "style.css"), "utf8");
+  assert.match(css, /html\.touch-device \.touch-controls\s*\{\s*display:\s*flex/s);
+  assert.match(css, /\.touch-controls\s*\{[^}]*touch-action:\s*none[^}]*user-select:\s*none[^}]*-webkit-user-select:\s*none[^}]*-webkit-touch-callout:\s*none[^}]*overscroll-behavior:\s*none/s);
+  assert.match(css, /\.touch-action\s*\{[^}]*pointer-events:\s*auto[^}]*touch-action:\s*none/s);
+  assert.match(css, /\.d-pad button\s*\{[^}]*pointer-events:\s*auto[^}]*touch-action:\s*none/s);
+});
+
+await test("94. altura visual acompanha barras móveis, rotação e visualViewport", () => {
+  const harness = createMobileEnvironmentHarness({ maxTouchPoints: 1, innerHeight: 844, visualHeight: 790 });
+  assert.equal(harness.rootElement.style["--app-viewport-height"], "790px");
+  harness.mobileWindow.visualViewport.height = 720;
+  harness.dispatchVisual("resize");
+  assert.equal(harness.rootElement.style["--app-viewport-height"], "720px");
+  harness.mobileWindow.visualViewport.height = 390;
+  harness.dispatchWindow("orientationchange");
+  assert.equal(harness.rootElement.style["--app-viewport-height"], "390px");
+});
+
+await test("95. viewport dinâmico tem fallback svh/dvh e safe areas nos quatro lados", () => {
+  const css = fs.readFileSync(path.join(root, "style.css"), "utf8");
+  const mobileSource = fs.readFileSync(path.join(root, "js", "mobile.js"), "utf8");
+  assert.match(css, /@supports \(height: 100svh\)/);
+  assert.match(css, /@supports \(height: 100dvh\)/);
+  assert.match(css, /--app-viewport-height/);
+  for (const side of ["top", "right", "bottom", "left"]) assert.match(css, new RegExp(`safe-area-inset-${side}`));
+  assert.match(mobileSource, /visualViewport\?\.height \|\| window\.innerHeight/);
+  assert.match(mobileSource, /visualViewport\?\.addEventListener\("resize"/);
+});
+
+await test("96. Canvas cabe nos sete viewports móveis solicitados", () => {
+  const viewports = [[390, 844], [430, 932], [844, 390], [932, 430], [412, 915], [915, 412], [768, 1024]];
+  for (const [width, height] of viewports) {
+    const wrapWidth = width;
+    const wrapHeight = Math.max(1, height - 76);
+    const { game } = createHarness({
+      innerWidth: width,
+      innerHeight: height,
+      visualViewportHeight: height,
+      wrapWidth,
+      wrapHeight
+    });
+    const renderedWidth = Number.parseFloat(game.canvas.style.width);
+    const renderedHeight = Number.parseFloat(game.canvas.style.height);
+    assert.ok(renderedWidth > 0 && renderedWidth <= wrapWidth, `${width}x${height}: largura`);
+    assert.ok(renderedHeight > 0 && renderedHeight <= wrapHeight, `${width}x${height}: altura`);
+    assert.ok(game.renderDpr >= 1 && game.renderDpr <= 2, `${width}x${height}: DPR`);
+  }
 });
 
 for (const result of results) {
