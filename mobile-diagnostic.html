@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#14324a">
+  <title>Diagnóstico móvel — Ben</title>
+  <style>
+    :root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#14324a;background:#eaf7f6}
+    *{box-sizing:border-box} body{margin:0;min-height:100dvh;padding:18px;padding-bottom:calc(18px + env(safe-area-inset-bottom))}
+    main{max-width:560px;margin:auto}.card{background:#fff;border-radius:22px;padding:22px;box-shadow:0 12px 30px rgba(20,50,74,.14)}
+    h1{font-size:1.65rem;margin:.2rem 0 1rem}.status{padding:12px;border-radius:14px;background:#eef7ff;margin:12px 0;font-weight:700}
+    button{width:100%;min-height:56px;border:0;border-radius:15px;margin:8px 0;padding:12px 16px;font-size:1rem;font-weight:800;color:#fff;background:#159a7c;touch-action:manipulation}
+    button.secondary{background:#14324a}.screen[hidden]{display:none}.ok{background:#e6faef;color:#126746}.bad{background:#fff0f0;color:#8c2525}
+    pre{white-space:pre-wrap;word-break:break-word;background:#f4f7f8;border-radius:12px;padding:12px;font-size:.78rem}
+  </style>
+</head>
+<body>
+<main>
+  <section id="one" class="screen card">
+    <small>TESTE ISOLADO · BUILD mobile-diagnostic-1</small>
+    <h1>Teste de toque do Ben</h1>
+    <p>Esta página não usa nenhum arquivo JavaScript externo.</p>
+    <div id="ready" class="status">JavaScript ainda não confirmado.</div>
+    <button id="next" type="button">Testar botão</button>
+    <button id="count" class="secondary" type="button">Contar toques: 0</button>
+  </section>
+
+  <section id="two" class="screen card" hidden>
+    <small>ETAPA 2</small>
+    <h1>O toque funcionou</h1>
+    <div class="status ok">O navegador executou o JavaScript inline e mudou de tela.</div>
+    <button id="back" type="button">Voltar à primeira tela</button>
+    <pre id="info"></pre>
+  </section>
+</main>
+<script>
+(function(){
+  'use strict';
+  var ready=document.getElementById('ready');
+  var one=document.getElementById('one');
+  var two=document.getElementById('two');
+  var next=document.getElementById('next');
+  var back=document.getElementById('back');
+  var count=document.getElementById('count');
+  var info=document.getElementById('info');
+  var touches=0;
+  ready.textContent='JavaScript inline carregado com sucesso.';
+  ready.className='status ok';
+  info.textContent=[
+    'userAgent: '+navigator.userAgent,
+    'maxTouchPoints: '+(navigator.maxTouchPoints||0),
+    'PointerEvent: '+Boolean(window.PointerEvent),
+    'ontouchstart: '+('ontouchstart' in window),
+    'inner: '+window.innerWidth+' x '+window.innerHeight,
+    'visualViewport: '+(window.visualViewport?Math.round(window.visualViewport.width)+' x '+Math.round(window.visualViewport.height):'indisponível'),
+    'time: '+new Date().toISOString()
+  ].join('\n');
+  function showSecond(e){ if(e&&e.cancelable)e.preventDefault(); one.hidden=true; two.hidden=false; }
+  function showFirst(e){ if(e&&e.cancelable)e.preventDefault(); two.hidden=true; one.hidden=false; }
+  function addTouch(e){ if(e&&e.cancelable)e.preventDefault(); touches+=1; count.textContent='Contar toques: '+touches; }
+  next.addEventListener('click',showSecond);
+  back.addEventListener('click',showFirst);
+  count.addEventListener('click',addTouch);
+  window.addEventListener('error',function(e){ ready.textContent='Erro: '+e.message; ready.className='status bad'; });
+})();
+</script>
+</body>
+</html>
