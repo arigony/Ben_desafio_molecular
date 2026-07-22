@@ -1,146 +1,128 @@
 # Ben: Desafio Molecular no Supermercado
 
-Jogo educacional em HTML5 no qual Ben explora um supermercado, empurra um carrinho e investiga produtos do cotidiano para reconhecer funções orgânicas.
-
-Esta primeira versão apresenta a **Missão 1 — Encontre produtos relacionados aos álcoois**.
+Jogo educacional em HTML5 no qual Ben explora um supermercado 2.5D, investiga compostos presentes no cotidiano e identifica suas funções orgânicas.
 
 ## Objetivo pedagógico
 
-O jogo aproxima a classificação das funções orgânicas do cotidiano. Nesta missão, o estudante precisa reconhecer produtos que contenham compostos da função álcool ou usem etanol como componente importante, além de diferenciar álcool, cetona, ácido carboxílico, éster e composto iônico.
+A missão aproxima as funções orgânicas do cotidiano. O estudante observa produto comercial, composto relacionado, fórmula molecular, estrutura condensada e modelo 3D antes de responder. Somente depois da resposta, o feedback revela a classificação, destaca o grupo funcional e explica a evidência estrutural e a relação comercial.
 
-Os feedbacks reforçam que produtos comerciais são misturas e não correspondem necessariamente a uma única substância.
+Produtos comerciais são apresentados com o devido cuidado científico: perfume, antisséptico, álcool em gel, óleo e refrigerante são misturas, não substâncias puras.
 
-## Mecânica
+## Fluxo do jogo
 
-1. Explore os corredores do supermercado.
-2. Aproxime Ben de um produto.
-3. Analise o produto com **Espaço**, **Enter** ou o botão virtual.
-4. Leia o feedback com composto, fórmula molecular, estrutura condensada e função química.
-5. Encontre os três produtos corretos.
-6. Leve o carrinho ao caixa para finalizar.
+1. Explore com `WASD`, setas ou controle móvel.
+2. Aproxime-se de um produto.
+3. Pressione `E`, `Espaço`, `Enter` ou **Analisar**.
+4. Observe fórmula, estrutura e representação molecular.
+5. Escolha uma das quatro alternativas ou use até duas pistas.
+6. Leia o feedback científico com o grupo funcional destacado.
+7. Reabra produtos já analisados para acessar diretamente a resposta e a explicação, sem alterar a pontuação.
+8. Complete a quantidade definida em `mission.required` e finalize no caixa.
 
 Pontuação:
 
-- produto correto: **+100 pontos**;
-- produto incorreto: **−25 pontos**, sem permitir total abaixo de zero;
-- lista completa: **+150 pontos** ao finalizar no caixa;
-- bônus de tempo: até **+180 pontos**.
+- resposta correta sem pista: **+100**;
+- resposta correta após uma pista: **+80**;
+- resposta correta após duas pistas: **+60**;
+- resposta incorreta: **−15**, sem permitir pontuação negativa;
+- cada produto pontua somente na primeira resposta; revisões diretas ou com nova resposta são neutras.
 
-A classificação final usa três, duas ou uma molécula de acordo com precisão e tempo.
+O objetivo usa `mission.required` e conta somente os produtos relacionados à missão depois de analisados.
 
-## Controles
+## Recursos
 
-| Ação | Computador | Dispositivo com toque |
-| --- | --- | --- |
-| Mover | `WASD` ou setas | Controle direcional |
-| Interagir | `Espaço` ou `Enter` | Botão **Analisar** |
-| Pausar/continuar | `P`, `Esc` ou botão `Ⅱ` | Botão `Ⅱ` |
-| Ativar/silenciar | Botão `♪` | Botão `♪` |
+- Canvas 2D em estilo flat 3D/pseudo-isométrico, com piso em perspectiva e cenário pré-renderizado;
+- estandes setorizados de Higiene e beleza, Cuidados pessoais, Mercearia, Bebidas e Caixa;
+- produtos posicionados nas prateleiras e estande iluminado quando Ben entra na área de investigação;
+- personagem oficial `assets/ben.png`, com recorte em memória, passo alternado e balanço independente de FPS;
+- Ben e carrinho tratados como uma unidade visual, com rodas, oscilação, celebração e produtos coletados dentro do cesto;
+- ficha de proximidade com composto, fórmula, estrutura e chamada **Analisar produto**;
+- perguntas, quatro alternativas, pistas e explicações configuráveis em `js/data.js`;
+- modal de análise acessível que pausa movimento e cronômetro;
+- fórmulas moleculares com subscritos HTML e descrições próprias para leitores de tela;
+- grupo funcional revelado somente após a resposta, com símbolo, contorno, fundo e sublinhado;
+- aviso explícito quando a representação corresponde a um composto de uma mistura comercial, e não ao produto inteiro;
+- HUD responsivo com pontuação, tempo, progresso, pausa, áudio e acesso à lista molecular;
+- lista molecular em painel lateral compacto no desktop e gaveta inferior no celular;
+- foco preso nos painéis modais, restauração de foco e áreas de toque de pelo menos 48 × 48 px;
+- 3Dmol.js 2.5.5 carregado por CDN, com um único visualizador reutilizado;
+- fallback de estrutura condensada caso CDN ou WebGL estejam indisponíveis;
+- controles de teclado, mouse e toque;
+- layout responsivo e compatível com GitHub Pages.
+- densidade do Canvas ajustada ao `devicePixelRatio`, limitada a 2, e animação suspensa durante pausas, painéis e segundo plano.
 
-O som só é habilitado após uma interação do usuário. Todas as informações também são apresentadas visualmente.
+Modelos XYZ locais:
 
-## Tecnologias
+- etanol;
+- isopropanol;
+- ácido acético;
+- acetona;
+- cloreto de sódio como par iônico simplificado;
+- fragmento didático de ligação éster.
 
-- HTML5 semântico;
-- CSS3 responsivo;
-- JavaScript moderno, sem framework;
-- Canvas 2D para o supermercado e a jogabilidade;
-- Web Audio API para efeitos originais;
-- nenhuma dependência externa, API, banco de dados ou servidor.
-
-Canvas 2D puro foi adotado no lugar de Phaser para manter esta primeira versão autocontida, permitir abertura direta por `index.html` e evitar que uma CDN indisponível bloqueie o jogo.
+Perfume e álcool em gel usam etanol. O antisséptico permite alternar entre etanol e isopropanol. O óleo mostra apenas o fragmento didático de éster. Refrigerante exibe a explicação de que não existe uma estrutura molecular única para a mistura.
 
 ## Estrutura
 
 ```text
-index.html       Telas e componentes acessíveis
-style.css        Direção visual e responsividade
+index.html            Telas, HUD e modais acessíveis
+style.css             Direção visual e responsividade
 js/
-  data.js        Missão, produtos e conteúdo científico
-  ui.js          Telas, HUD, modais e resultados
-  game.js        Loop Canvas, movimento, colisões, áudio e regras
+  data.js             Missão, produtos e modelos XYZ
+  molecule3d.js       Visualizador 3D reutilizável e fallback
+  ui.js               Telas, análise, feedback e resultados
+  game.js             Canvas, movimento, colisões, áudio e regras
 tests/
-  run-tests.mjs Verificações comportamentais
+  run-tests.mjs       72 verificações comportamentais, visuais, químicas e responsivas
 assets/
-  ben.png        Imagem oficial do personagem
-LICENSE          Licença do repositório
-README.md        Este documento
-TESTS.md         Registro da validação executada
+  ben.webp            Imagem otimizada usada por navegadores compatíveis
+  ben.png             Imagem oficial preservada como fallback
+LICENSE               Licença MIT existente
+TESTS.md              Registro da validação
 ```
 
-## Como executar localmente
+## Executar localmente
 
-Não há etapa de instalação ou compilação.
-
-Opção direta:
-
-1. baixe ou clone o repositório;
-2. abra `index.html` em um navegador moderno.
-
-Opção com servidor local (recomendada para reproduzir o ambiente do GitHub Pages):
+Não há compilação ou instalação:
 
 ```bash
 python -m http.server 8000
 ```
 
-Depois acesse `http://localhost:8000`.
+Acesse `http://localhost:8000`. A abertura direta de `index.html` também funciona; somente o carregamento do 3D depende de acesso à CDN, e sua ausência aciona o fallback.
 
-## Publicação no GitHub Pages
-
-1. Envie a branch revisada para o GitHub.
-2. Integre as alterações na branch escolhida para publicação apenas após a revisão.
-3. Em **Settings → Pages**, selecione **Deploy from a branch**.
-4. Escolha a branch e a pasta `/ (root)`.
-5. Salve e aguarde o endereço publicado pelo GitHub.
-
-Como `index.html` está na raiz e todos os caminhos são relativos, nenhuma configuração adicional é necessária.
-
-## Testes
-
-Execute as verificações automatizadas com:
+Para os testes automatizados:
 
 ```bash
 node tests/run-tests.mjs
 ```
 
-O relatório detalhado da validação desta versão está em [`TESTS.md`](TESTS.md).
+## GitHub Pages
+
+O `index.html` fica na raiz e todos os caminhos locais são relativos, portanto o projeto pode ser publicado por **Settings → Pages → Deploy from a branch**, usando `main` e `/ (root)`.
+
+Endereço do projeto: <https://arigony.github.io/Ben_desafio_molecular/>
+
+### Asset do Ben
+
+A imagem permanece em `1024 × 1024`, resolução suficiente para o maior uso no HTML e para o recorte do Canvas. Navegadores compatíveis carregam `assets/ben.webp` em modo lossless; o PNG RGBA original permanece como fallback. O Canvas reutiliza a instância da imagem já carregada pela tela inicial, evitando uma segunda transferência do mesmo asset.
+
+- PNG original: **1.620.497 bytes**;
+- WebP lossless: **1.126.084 bytes**;
+- redução por carregamento: **494.413 bytes (30,51%)**;
+- canal alfa e pixels visíveis: preservados sem diferença.
 
 ## Acessibilidade
 
-- uso completo por teclado;
-- controles por toque em dispositivos compatíveis;
-- foco visível;
-- botões identificados por texto ou rótulo acessível;
-- mensagens também expostas a tecnologias assistivas;
-- contraste alto;
-- pausa manual e automática ao ocultar a aba;
-- preferência `prefers-reduced-motion` respeitada;
+- operação por teclado e toque;
+- foco visível e modais com foco inicial;
+- `Escape` fecha a análise sem pontuar;
+- feedback não depende apenas de cor: usa texto, contorno e sublinhado;
+- conteúdo essencial também é exposto a tecnologias assistivas;
+- pausa manual e ao ocultar a aba;
+- `prefers-reduced-motion` respeitado;
 - compreensão completa sem áudio.
 
-## Limitações desta primeira versão
+## Créditos e licença
 
-- contém uma missão e uma função orgânica principal;
-- não há salvamento de progresso ou ranking persistente;
-- os produtos e o carrinho são ilustrações vetoriais feitas no Canvas;
-- não há narração ou música de fundo;
-- no modo vertical, a câmera acompanha Ben e mostra apenas parte do supermercado de cada vez;
-- controles de toque e áudio ainda precisam de uma rodada adicional em aparelhos físicos variados.
-
-## Próximos passos
-
-- adicionar missões para hidrocarbonetos, aldeídos, cetonas, ácidos carboxílicos, ésteres e aminas;
-- criar níveis de dificuldade e modo de revisão;
-- incluir mais mapas e produtos;
-- adicionar opção de alto contraste e remapeamento de controles;
-- criar testes automatizados de regressão visual;
-- persistir conquistas localmente, com consentimento do usuário.
-
-## Créditos
-
-- Personagem Ben: imagem oficial `assets/ben.png` fornecida no projeto.
-- Concepção e conteúdo: projeto **Ben: Desafio Molecular**.
-- Implementação visual, mecânica e sons: recursos originais desta versão.
-
-## Licença sugerida
-
-O repositório já inclui uma licença MIT. Para distribuição pública, recomenda-se manter a MIT para o código e documentar separadamente a autorização de uso da imagem oficial do Ben, caso ela possua termos próprios.
+O personagem Ben usa a imagem oficial `assets/ben.png` fornecida no projeto e sua conversão lossless `assets/ben.webp`. O código permanece sob a licença MIT existente; eventuais termos próprios da imagem devem ser documentados separadamente.

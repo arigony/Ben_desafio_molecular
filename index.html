@@ -26,7 +26,19 @@
         <div class="hero-art" aria-hidden="true">
           <div class="molecule-orbit"><span>OH</span><i></i><b>CH₃</b></div>
           <div class="hero-spotlight"></div>
-          <img src="assets/ben.png" alt="" class="ben-hero">
+          <picture>
+            <source srcset="assets/ben.webp" type="image/webp">
+            <img
+              id="ben-asset"
+              src="assets/ben.png"
+              width="1024"
+              height="1024"
+              alt=""
+              class="ben-hero"
+              decoding="async"
+              fetchpriority="high"
+            >
+          </picture>
           <div class="hero-cart"><span></span><i></i><b></b></div>
           <div class="hero-badge">MISSÃO 1 <small>ÁLCOOIS</small></div>
         </div>
@@ -45,20 +57,20 @@
             </article>
             <article>
               <span class="step-number">02</span>
-              <h3>Investigue</h3>
-              <p>Aproxime-se de um produto e pressione <kbd>Espaço</kbd>, <kbd>Enter</kbd> ou “Analisar”.</p>
+              <h3>Analise</h3>
+              <p>Aproxime-se e pressione <kbd>E</kbd>, <kbd>Espaço</kbd>, <kbd>Enter</kbd> ou “Analisar” para observar a fórmula.</p>
             </article>
             <article>
               <span class="step-number">03</span>
-              <h3>Complete</h3>
-              <p>Encontre os três itens corretos, leve o carrinho ao caixa e confira seu desempenho.</p>
+              <h3>Responda</h3>
+              <p>Identifique a função orgânica, use até duas pistas se precisar e então confira a evidência estrutural.</p>
             </article>
           </div>
           <div class="score-rules">
-            <span><strong>+100</strong> produto correto</span>
-            <span><strong>−25</strong> escolha incorreta</span>
-            <span><strong>+150</strong> lista completa</span>
-            <span><strong>+tempo</strong> chegada rápida</span>
+            <span><strong>+100</strong> correta sem pista</span>
+            <span><strong>+80</strong> correta após 1 pista</span>
+            <span><strong>+60</strong> correta após 2 pistas</span>
+            <span><strong>−15</strong> resposta incorreta</span>
           </div>
           <p class="accessibility-note">
             Pressione <kbd>P</kbd> ou <kbd>Esc</kbd> para pausar. Todo o conteúdo pode ser compreendido sem áudio.
@@ -70,7 +82,18 @@
       <section id="mission-screen" class="screen mission-screen" aria-labelledby="mission-title">
         <div class="mission-ben-panel" aria-hidden="true">
           <div class="mission-number">01</div>
-          <img src="assets/ben.png" alt="" class="ben-mission">
+          <picture>
+            <source srcset="assets/ben.webp" type="image/webp">
+            <img
+              src="assets/ben.png"
+              width="1024"
+              height="1024"
+              alt=""
+              class="ben-mission"
+              decoding="async"
+              loading="lazy"
+            >
+          </picture>
         </div>
         <div class="mission-copy">
           <p class="eyebrow">NOVA MISSÃO</p>
@@ -85,7 +108,7 @@
           </div>
           <div class="mission-target">
             <span>OBJETIVO</span>
-            <strong>Encontre 3 produtos corretos</strong>
+            <strong id="mission-target-text">Encontre os produtos corretos</strong>
           </div>
           <button id="mission-start-button" class="primary-button" type="button">Entrar no supermercado</button>
         </div>
@@ -100,27 +123,30 @@
           <div class="hud-stats" aria-live="polite">
             <div><small>PONTOS</small><strong id="score-value">000</strong></div>
             <div><small>TEMPO</small><strong id="timer-value">00:00</strong></div>
-            <div><small>ITENS</small><strong><span id="found-value">0</span>/3</strong></div>
+            <div><small>ITENS</small><strong><span id="found-value">0</span>/<span id="required-value">0</span></strong></div>
           </div>
           <div class="hud-actions">
             <button id="pause-button" class="icon-button" type="button" aria-label="Pausar jogo" title="Pausar (P)">Ⅱ</button>
             <button id="mute-button" class="icon-button" type="button" aria-label="Silenciar áudio" aria-pressed="false" title="Som">♪</button>
+            <button id="list-button" class="hud-list-button" type="button" aria-controls="shopping-panel" aria-expanded="true">Lista</button>
           </div>
         </header>
 
         <div class="game-layout">
-          <aside class="shopping-panel" aria-labelledby="shopping-title">
-            <p class="eyebrow">SUA MISSÃO</p>
-            <h2 id="shopping-title">Lista molecular</h2>
+          <button id="list-backdrop" class="list-backdrop" type="button" aria-label="Fechar lista molecular" aria-hidden="true" tabindex="-1" hidden></button>
+          <aside id="shopping-panel" class="shopping-panel" aria-labelledby="shopping-title">
+            <header class="shopping-panel-header">
+              <div>
+                <p class="eyebrow">SUA MISSÃO</p>
+                <h2 id="shopping-title">Lista molecular</h2>
+              </div>
+              <button id="list-close-button" class="list-close-button" type="button" aria-label="Fechar lista molecular">×</button>
+            </header>
             <p class="panel-hint">Procure produtos ligados à função álcool.</p>
-            <ol id="shopping-list" class="shopping-list">
-              <li data-item="alcohol-gel"><span>?</span><div><strong>Item misterioso</strong><small>Encontre no mercado</small></div></li>
-              <li data-item="perfume"><span>?</span><div><strong>Item misterioso</strong><small>Encontre no mercado</small></div></li>
-              <li data-item="antiseptic"><span>?</span><div><strong>Item misterioso</strong><small>Encontre no mercado</small></div></li>
-            </ol>
+            <ol id="shopping-list" class="shopping-list"></ol>
             <div class="cart-progress" aria-label="Progresso do carrinho">
               <div class="cart-mini" aria-hidden="true">🛒</div>
-              <div><span id="cart-dots"><i></i><i></i><i></i></span><small>Carrinho do Ben</small></div>
+              <div><span id="cart-dots"></span><small>Carrinho do Ben</small></div>
             </div>
           </aside>
 
@@ -131,10 +157,10 @@
             <p id="canvas-description" class="sr-only" aria-live="polite">
               Ben está na entrada do supermercado. Explore os corredores para encontrar produtos.
             </p>
-            <div id="interaction-prompt" class="interaction-prompt" hidden>
+            <button id="interaction-prompt" class="interaction-prompt" type="button" hidden>
               <kbd>E</kbd>
-              <span>Pressione para colocar no carrinho</span>
-            </div>
+              <span>Analisar produto</span>
+            </button>
             <div id="touch-controls" class="touch-controls" aria-label="Controles por toque">
               <div class="d-pad">
                 <button type="button" data-direction="up" aria-label="Mover para cima">▲</button>
@@ -148,16 +174,76 @@
         </div>
       </section>
 
+      <div id="analysis-modal" class="modal-backdrop" hidden>
+        <section class="analysis-card" role="dialog" aria-modal="true" aria-labelledby="analysis-title" aria-describedby="analysis-intro analysis-representation-note">
+          <header class="analysis-heading">
+            <div>
+              <p class="eyebrow">ANÁLISE MOLECULAR</p>
+              <p class="content-field-label">Produto comercial</p>
+              <h2 id="analysis-title">Produto</h2>
+            </div>
+            <button id="analysis-close-button" class="modal-close" type="button" aria-label="Voltar a observar">×</button>
+          </header>
+          <p id="analysis-intro" class="analysis-intro">Observe os dados do composto relacionado e identifique sua classificação.</p>
+          <p id="analysis-representation-note" class="representation-note">
+            <strong>Escopo da representação:</strong> a fórmula e a estrutura descrevem o composto relacionado à investigação, não necessariamente o produto comercial inteiro.
+          </p>
+          <div class="analysis-layout">
+            <div class="analysis-data">
+              <dl class="chemistry-grid analysis-chemistry">
+                <div><dt>Composto relacionado</dt><dd id="analysis-compound"></dd></div>
+                <div><dt>Fórmula molecular</dt><dd id="analysis-formula" class="chemical-formula"></dd></div>
+                <div class="structure-cell"><dt>Estrutura condensada</dt><dd id="analysis-structure" class="chemical-structure"></dd></div>
+              </dl>
+              <label id="model-selector-label" class="model-selector" hidden>
+                Modelo exibido
+                <select id="model-selector"></select>
+              </label>
+              <p id="molecule-note" class="molecule-note" hidden></p>
+            </div>
+            <div class="molecule-panel">
+              <div id="molecule-viewer" class="molecule-viewer" aria-label="Modelo molecular 3D interativo"></div>
+              <p id="molecule-fallback" class="molecule-fallback" hidden>
+                Visualização 3D indisponível neste dispositivo.
+              </p>
+            </div>
+          </div>
+          <div class="quiz-block">
+            <p id="analysis-review-note" class="analysis-review-note" hidden>Revisão: este produto já foi analisado. A pontuação não será alterada.</p>
+            <button id="analysis-review-button" class="review-explanation-button" type="button" hidden>Rever resposta e explicação</button>
+            <p id="analysis-question" class="analysis-question">Qual é a função orgânica principal deste composto?</p>
+            <div id="analysis-options" class="answer-options" role="group" aria-labelledby="analysis-question"></div>
+            <div id="analysis-hints" class="analysis-hints" aria-live="polite"></div>
+          </div>
+          <div class="decision-actions">
+            <button id="analysis-hint-button" class="secondary-button" type="button">Ver pista</button>
+            <button id="analysis-observe-button" class="text-button" type="button">Voltar a observar</button>
+          </div>
+        </section>
+      </div>
+
       <div id="feedback-modal" class="modal-backdrop" hidden>
-        <section class="feedback-card" role="dialog" aria-modal="true" aria-labelledby="feedback-title">
+        <section class="feedback-card" role="dialog" aria-modal="true" aria-labelledby="feedback-title" aria-describedby="feedback-explanation">
           <div id="feedback-status" class="feedback-status"><span id="feedback-icon">✓</span><strong id="feedback-result">ESCOLHA CORRETA</strong></div>
+          <p class="content-field-label">Produto comercial</p>
           <h2 id="feedback-title">Produto</h2>
           <p id="feedback-explanation" class="feedback-explanation"></p>
           <dl class="chemistry-grid">
             <div><dt>Composto relacionado</dt><dd id="feedback-compound"></dd></div>
             <div><dt>Função / classificação</dt><dd id="feedback-function"></dd></div>
-            <div><dt>Fórmula molecular</dt><dd id="feedback-formula"></dd></div>
-            <div><dt>Estrutura condensada</dt><dd id="feedback-structure" class="chemical-structure"></dd></div>
+            <div class="functional-group-cell">
+              <dt>Grupo funcional identificado</dt>
+              <dd id="feedback-group" class="functional-group-result">
+                <span id="feedback-group-name"></span>
+                <span id="feedback-group-symbol" class="functional-group-symbol"></span>
+              </dd>
+            </div>
+            <div><dt>Fórmula molecular</dt><dd id="feedback-formula" class="chemical-formula"></dd></div>
+            <div class="structure-cell"><dt>Estrutura condensada — grupo destacado</dt><dd id="feedback-structure" class="chemical-structure"></dd></div>
+            <div class="structure-cell"><dt>Evidência estrutural</dt><dd id="feedback-evidence"></dd></div>
+            <div class="structure-cell"><dt>Natureza do produto comercial</dt><dd id="feedback-product-nature"></dd></div>
+            <div class="structure-cell"><dt>Escopo da fórmula e da estrutura</dt><dd id="feedback-representation-scope"></dd></div>
+            <div class="structure-cell"><dt>Relação com o produto comercial</dt><dd id="feedback-relation"></dd></div>
           </dl>
           <p id="feedback-points" class="feedback-points"></p>
           <button id="feedback-continue-button" class="primary-button" type="button">Continuar explorando</button>
@@ -177,14 +263,25 @@
       <section id="complete-screen" class="screen complete-screen" aria-labelledby="complete-title">
         <div class="complete-art" aria-hidden="true">
           <div class="complete-burst"></div>
-          <img src="assets/ben.png" alt="" class="ben-complete">
-          <div class="full-cart">🛒<span>3</span></div>
+          <picture>
+            <source srcset="assets/ben.webp" type="image/webp">
+            <img
+              src="assets/ben.png"
+              width="1024"
+              height="1024"
+              alt=""
+              class="ben-complete"
+              decoding="async"
+              loading="lazy"
+            >
+          </picture>
+          <div class="full-cart">🛒<span id="complete-count">0</span></div>
         </div>
         <div class="complete-copy">
           <p class="eyebrow">LISTA COMPLETA</p>
-          <h2 id="complete-title">Muito bem! Os três produtos estão no carrinho.</h2>
+          <h2 id="complete-title">Muito bem! A investigação da lista foi concluída.</h2>
           <p>Agora falta a última etapa: leve Ben até o caixa indicado no canto inferior direito do supermercado.</p>
-          <div class="completion-bonus"><span>+150</span><p><strong>Bônus de lista completa</strong><br>garantido ao finalizar no caixa</p></div>
+          <div class="completion-bonus"><span>✓</span><p><strong>Objetivo pedagógico concluído</strong><br>a pontuação já considera suas respostas e pistas</p></div>
           <button id="go-to-checkout-button" class="primary-button" type="button">Ir para o caixa</button>
         </div>
       </section>
@@ -193,7 +290,18 @@
         <div class="result-card">
           <div class="result-ben-wrap" aria-hidden="true">
             <div id="molecule-rating" class="molecule-rating"><span>●</span><span>●</span><span>●</span></div>
-            <img src="assets/ben.png" alt="" class="ben-result">
+            <picture>
+              <source srcset="assets/ben.webp" type="image/webp">
+              <img
+                src="assets/ben.png"
+                width="1024"
+                height="1024"
+                alt=""
+                class="ben-result"
+                decoding="async"
+                loading="lazy"
+              >
+            </picture>
           </div>
           <div class="result-copy">
             <p class="eyebrow">MISSÃO CONCLUÍDA</p>
@@ -201,10 +309,10 @@
             <p id="result-message"></p>
             <div class="result-score"><small>PONTUAÇÃO FINAL</small><strong id="final-score">000</strong></div>
             <div class="result-breakdown">
-              <div><span>Produtos corretos</span><strong id="final-correct">3/3</strong></div>
-              <div><span>Escolhas incorretas</span><strong id="final-errors">0</strong></div>
+              <div><span>Produtos corretos</span><strong id="final-correct">0/0</strong></div>
+              <div><span>Respostas incorretas</span><strong id="final-errors">0</strong></div>
               <div><span>Tempo</span><strong id="final-time">00:00</strong></div>
-              <div><span>Bônus de tempo</span><strong id="final-time-bonus">+0</strong></div>
+              <div><span>Produtos analisados</span><strong id="final-reviewed">0</strong></div>
             </div>
             <div class="result-actions">
               <button id="play-again-button" class="primary-button" type="button">Jogar novamente</button>
@@ -215,8 +323,10 @@
       </section>
     </main>
 
-    <script src="js/data.js"></script>
-    <script src="js/ui.js"></script>
-    <script src="js/game.js"></script>
+    <script defer src="js/data.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/3dmol@2.5.5/build/3Dmol-min.js"></script>
+    <script defer src="js/molecule3d.js"></script>
+    <script defer src="js/ui.js"></script>
+    <script defer src="js/game.js"></script>
   </body>
 </html>
