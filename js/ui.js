@@ -374,7 +374,9 @@
       });
       this.elements.analysis.hidden = false;
       if (this.moleculeViewer) {
-        this.moleculeViewer.show(product);
+        void this.moleculeViewer.show(product).catch(() => {
+          this.moleculeViewer.hide3D("Visualização 3D indisponível neste dispositivo.");
+        });
       } else {
         this.elements.modelContainer.hidden = true;
         this.elements.modelFallback.hidden = false;

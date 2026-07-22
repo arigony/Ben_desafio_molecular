@@ -624,11 +624,13 @@ await test("27. classificação correta só é preenchida no feedback posterior"
   assert.match(analysis, /id="analysis-hint-button"[^>]*>Ver pista</);
 });
 
-await test("28. modal molecular e script 3D explícito estão presentes", () => {
+await test("28. modal molecular preserva o módulo 3D sem bloquear o HTML", () => {
   const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
+  const moleculeSource = fs.readFileSync(path.join(root, "js", "molecule3d.js"), "utf8");
   assert.match(html, /id="analysis-modal"/);
-  assert.match(html, /3dmol@2\.5\.5/);
   assert.match(html, /js\/molecule3d\.js/);
+  assert.doesNotMatch(html, /cdn\.jsdelivr\.net.*3Dmol-min\.js/);
+  assert.match(moleculeSource, /3dmol@2\.5\.5\/build\/3Dmol-min\.js/);
 });
 
 await test("29. etanol tem fórmula e modelo XYZ com 9 átomos", () => {
@@ -773,7 +775,7 @@ await test("40. estrutura é compatível com GitHub Pages", () => {
   const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
   assert.ok(fs.existsSync(path.join(root, "index.html")));
   assert.match(html, /src="assets\/ben\.png"/);
-  assert.match(html, /src="js\/game\.js"/);
+  assert.match(html, /src="js\/game\.js\?v=__BUILD_VERSION__"/);
 });
 
 await test("41. não existem caminhos absolutos incompatíveis", () => {
@@ -1513,6 +1515,133 @@ await test("96. Canvas cabe nos sete viewports móveis solicitados", () => {
     assert.ok(renderedHeight > 0 && renderedHeight <= wrapHeight, `${width}x${height}: altura`);
     assert.ok(game.renderDpr >= 1 && game.renderDpr <= 2, `${width}x${height}: DPR`);
   }
+});
+
+await test("97. HTML inclui mobile.js e somente scripts locais no carregamento inicial", () => {
+  const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
+  assert.match(html, /src="js\/mobile\.js\?v=__BUILD_VERSION__"/);
+  assert.doesNotMatch(html, /src="https:\/\/cdn\.jsdelivr\.net\/npm\/3dmol/);
+  const orderedScripts = ["js/data.js", "js/mobile.js", "js/molecule3d.js", "js/ui.js", "js/game.js"];
+  const positions = orderedScripts.map((script) => html.indexOf(script));
+  assert.ok(positions.every((position) => position >= 0));
+  assert.deepEqual([...positions].sort((a, b) => a - b), positions);
+});
+
+await test("98. game.js inicia sem depender do carregamento prévio do 3Dmol", () => {
+  const { game, fakeWindow } = createHarness();
+  assert.equal(fakeWindow.$3Dmol, undefined);
+  assert.equal(typeof fakeWindow.BenGame, "function");
+  assert.doesNotThrow(() => game.start());
+  assert.equal(game.running, true);
+});
+
+await test("99. falha da CDN exibe fallback sem rejeição não tratada", async () => {
+  const appendedScripts = [];
+  const script = new FakeElement("3dmol-script");
+  const fakeWindow = {
+    $3Dmol: null,
+    WebGLRenderingContext: function WebGLRenderingContext() {},
+    setTimeout,
+    clearTimeout
+  };
+  const fakeDocument = {
+    querySelector() { return null; },
+    createElement(tagName) {
+      if (tagName === "canvas") return { getContext: () => ({}) };
+      return script;
+    },
+    head: {
+      append(node) {
+        appendedScripts.push(node);
+        node.dispatch("error");
+      }
+    }
+  };
+  const context = vm.createContext({ window: fakeWindow, document: fakeDocument, requestAnimationFrame: () => 1, console, Promise });
+  vm.runInContext(fs.readFileSync(path.join(root, "js", "molecule3d.js"), "utf8"), context);
+  const container = new FakeElement("viewer");
+  const fallback = new FakeElement("fallback");
+  const viewer = new fakeWindow.MoleculeViewer({
+    container,
+    fallback,
+    selector: new FakeElement("selector"),
+    selectorLabel: new FakeElement("selector-label"),
+    note: new FakeElement("note"),
+    models: { ethanol: "1\nx\nH 0 0 0" }
+  });
+  const rendered = await viewer.show({ modelKeys: ["ethanol"], modelLabels: ["Etanol"] });
+  assert.equal(rendered, false);
+  assert.equal(appendedScripts.length, 1);
+  assert.equal(appendedScripts[0].async, true);
+  assert.equal(container.hidden, true);
+  assert.equal(fallback.hidden, false);
+  assert.equal(fallback.textContent, "Visualização 3D indisponível neste dispositivo.");
+});
+
+await test("100. carregador 3D limita o timeout a cinco segundos", () => {
+  const fakeWindow = { setTimeout, clearTimeout };
+  const fakeDocument = { createElement: () => new FakeElement(), querySelector: () => null, head: { append() {} } };
+  const context = vm.createContext({ window: fakeWindow, document: fakeDocument, console, Promise });
+  vm.runInContext(fs.readFileSync(path.join(root, "js", "molecule3d.js"), "utf8"), context);
+  const loader = new fakeWindow.ThreeDMolLoader({ timeoutMs: 9000 });
+  assert.equal(loader.timeoutMs, 5000);
+});
+
+await test("101. perguntas e alternativas são montadas antes do carregamento 3D", () => {
+  const source = fs.readFileSync(path.join(root, "js", "ui.js"), "utf8");
+  const section = source.slice(source.indexOf("    showAnalysis(product"), source.indexOf("    showHint(text"));
+  assert.ok(section.indexOf("analysisQuestion.textContent") < section.indexOf("this.moleculeViewer.show(product)"));
+  assert.ok(section.indexOf("product.quiz.options.forEach") < section.indexOf("this.moleculeViewer.show(product)"));
+  assert.match(section, /\.show\(product\)\.catch\(/);
+});
+
+await test("102. controles móveis permanecem presentes após o desacoplamento 3D", () => {
+  const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
+  const css = fs.readFileSync(path.join(root, "style.css"), "utf8");
+  assert.match(html, /id="touch-controls"/);
+  assert.match(html, /id="touch-interact-button"[^>]*>Analisar<\/button>/);
+  assert.match(css, /html\.touch-device \.touch-controls/);
+});
+
+await test("103. workflow oficial do Pages publica a pasta raiz", () => {
+  const workflow = fs.readFileSync(path.join(root, ".github", "workflows", "deploy-pages.yml"), "utf8");
+  assert.match(workflow, /uses:\s*actions\/checkout@v6/);
+  assert.match(workflow, /uses:\s*actions\/configure-pages@v6/);
+  assert.match(workflow, /uses:\s*actions\/upload-pages-artifact@v5/);
+  assert.match(workflow, /uses:\s*actions\/deploy-pages@v5/);
+  assert.match(workflow, /path:\s*\./);
+});
+
+await test("104. workflow é acionado por push na main e execução manual", () => {
+  const workflow = fs.readFileSync(path.join(root, ".github", "workflows", "deploy-pages.yml"), "utf8");
+  assert.match(workflow, /on:\s*\r?\n\s*push:\s*\r?\n\s*branches:\s*\r?\n\s*- main/);
+  assert.match(workflow, /workflow_dispatch:/);
+  assert.match(workflow, /contents:\s*read/);
+  assert.match(workflow, /pages:\s*write/);
+  assert.match(workflow, /id-token:\s*write/);
+});
+
+await test("105. workflow não depende de docs nem de branch gh-pages", () => {
+  const workflowDirectory = path.join(root, ".github", "workflows");
+  const pageWorkflows = fs.readdirSync(workflowDirectory)
+    .filter((file) => /\.ya?ml$/i.test(file));
+  const workflow = fs.readFileSync(path.join(root, ".github", "workflows", "deploy-pages.yml"), "utf8");
+  assert.deepEqual(pageWorkflows, ["deploy-pages.yml"]);
+  assert.doesNotMatch(workflow, /(?:path|source):\s*\.?\/?docs\b/);
+  assert.doesNotMatch(workflow, /branches?:\s*\[?\s*gh-pages\b/);
+});
+
+await test("106. build version identifica o SHA e versiona os arquivos locais", () => {
+  const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
+  const workflow = fs.readFileSync(path.join(root, ".github", "workflows", "deploy-pages.yml"), "utf8");
+  assert.match(html, /meta name="app-version" content="__BUILD_VERSION__"/);
+  assert.match(html, /Ben build: \$\{window\.BEN_BUILD_VERSION\}/);
+  for (const asset of ["style.css", "js/data.js", "js/mobile.js", "js/molecule3d.js", "js/ui.js", "js/game.js"]) {
+    assert.match(html, new RegExp(`${asset.replace(/[./]/g, "\\$&")}\\?v=__BUILD_VERSION__`), asset);
+  }
+  assert.match(workflow, /BUILD_SHA:\s*\$\{\{ github\.sha \}\}/);
+  assert.match(workflow, /BUILD_VERSION="\$\{BUILD_SHA::7\}"/);
+  assert.match(workflow, /sed -i "s\/__BUILD_VERSION__\/\$\{BUILD_VERSION\}\/g" index\.html/);
 });
 
 for (const result of results) {
