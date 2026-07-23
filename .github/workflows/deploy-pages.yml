@@ -23,17 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Build Mobile V7
-        run: python3 .github/scripts/build_v7.py
-
-      - name: Inject build version
-        env:
-          BUILD_SHA: ${{ github.sha }}
-        run: |
-          BUILD_VERSION="${BUILD_SHA::7}"
-          sed -i "s/__BUILD_VERSION__/${BUILD_VERSION}/g" index.html
+        uses: actions/checkout@v4
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
