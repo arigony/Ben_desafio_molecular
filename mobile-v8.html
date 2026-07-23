@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
+<meta content="#12364b" name="theme-color"/>
+<meta content="Ben: Desafio Molecular no Supermercado — experiência educacional móvel em primeira pessoa." name="description"/>
+<title>Ben: Desafio Molecular — Mobile V8</title>
+<link href="css/mobile-v8.css" rel="stylesheet"/>
+<script defer src="js/mobile-v8-data.js"></script>
+<script defer src="js/mobile-v8-viewer.js"></script>
+<script defer src="js/mobile-v8.js"></script>
+</head>
+<body>
+<main aria-live="polite" id="app">
+<section class="screen active home-screen" data-screen="home" id="home-screen">
+<div class="home-art-shell">
+<img alt="Ben ao lado de um carrinho de supermercado cheio de modelos moleculares, diante de um supermercado." class="home-art" id="home-art-image" src="data:image/gif;base64,R0lGODlhAQABAAAAACw="/>
+<button aria-label="Começar desafio" class="art-hotspot start-hotspot" id="home-start"></button>
+<button aria-label="Como jogar" class="art-hotspot how-hotspot" id="home-how"></button>
+</div>
+</section>
+<section aria-labelledby="tutorial-title" class="screen info-screen" data-screen="tutorial" id="tutorial-screen">
+<article class="info-card">
+<button aria-label="Voltar" class="back-link" data-back>← Voltar</button>
+<div class="guide-row">
+<div aria-label="Ben, guia do desafio" class="guide-avatar large ben-face" role="img"></div>
+<div><p class="eyebrow">COMO JOGAR</p><h1 id="tutorial-title">Explore, analise e complete o carrinho</h1></div>
+</div>
+<div class="tutorial-grid">
+<div class="tutorial-step"><span>1</span><strong>Avance pelo corredor</strong><p>Use as setas para mudar de posição e observar os dois lados.</p></div>
+<div class="tutorial-step"><span>2</span><strong>Escolha um produto</strong><p>Olhe para a esquerda ou direita e toque em “Analisar”.</p></div>
+<div class="tutorial-step"><span>3</span><strong>Identifique a função</strong><p>Use a fórmula, a estrutura e o modelo molecular como evidências.</p></div>
+<div class="tutorial-step"><span>4</span><strong>Complete a missão</strong><p>Encontre três produtos relacionados à função álcool e vá ao caixa.</p></div>
+</div>
+<button class="primary wide" data-go="mission">Entendi — ver a missão</button>
+</article>
+</section>
+<section aria-labelledby="mission-title" class="screen info-screen" data-screen="mission" id="mission-screen">
+<article class="info-card mission-card">
+<button aria-label="Voltar" class="back-link" data-back>← Voltar</button>
+<div class="guide-row">
+<div aria-label="Ben apresentando a missão" class="guide-avatar large ben-face" role="img"></div>
+<div><p class="eyebrow">MISSÃO 1</p><h1 id="mission-title">Álcoois no cotidiano</h1></div>
+</div>
+<div class="mission-objective"><span>OBJETIVO</span><strong>Encontre três produtos relacionados a compostos que apresentam a função álcool.</strong></div>
+<p class="science-note"><strong>Nota científica:</strong> produtos comerciais podem ser misturas. Quando isso ocorrer, o jogo identificará claramente o composto representativo estudado, sem atribuir uma fórmula única ao produto inteiro.</p>
+<button class="primary wide" id="enter-store">Entrar no supermercado</button>
+</article>
+</section>
+<section aria-label="Supermercado em primeira pessoa" class="screen game-screen" data-screen="game" id="game-screen">
+<header class="hud">
+<div class="hud-ben"><div class="hud-avatar ben-face"></div><div class="hud-copy"><strong>MISSÃO 1 · ÁLCOOIS</strong><small id="ben-hud-message">Vamos começar pela entrada.</small></div></div>
+<div class="hud-stat"><small>PONTOS</small><strong id="points-value">000</strong></div>
+<div class="hud-stat"><small>TEMPO</small><strong id="time-value">00:00</strong></div>
+<div class="hud-stat"><small>ITENS</small><strong id="items-value">0/3</strong></div>
+<button aria-label="Pausar" class="hud-button" id="pause-button">Ⅱ</button>
+<button aria-label="Abrir lista de produtos" class="hud-button list" id="list-button">Lista</button>
+</header>
+<div class="game-stage">
+<div aria-label="Corredor de supermercado visto em primeira pessoa" class="aisle-view stop-0" id="aisle-view" role="img">
+<div class="aisle-shade"></div><div class="sector-sign" id="sector-sign">ENTRADA</div>
+<button aria-label="Produto à esquerda" class="product-target side-left" id="left-product"></button>
+<button aria-label="Produto à direita" class="product-target side-right" id="right-product"></button>
+<div class="focus-indicator" hidden id="focus-indicator"></div>
+<div class="ben-tip" id="ben-tip"><div class="tip-avatar ben-face"></div><p id="ben-tip-text">Toque em ▲ para avançar pelo corredor.</p></div>
+<div aria-label="Carrinho do jogador" class="cart-fp"><div class="cart-handle"></div><div class="cart-basket"><div aria-label="Itens coletados" class="cart-items" id="cart-items"></div></div></div>
+</div>
+<div aria-label="Controles do jogo" class="controls">
+<div class="nav-pad">
+<button aria-label="Olhar para a esquerda" id="look-left">◀</button>
+<button aria-label="Avançar" id="move-forward">▲</button>
+<button aria-label="Olhar para a direita" id="look-right">▶</button>
+<button aria-label="Voltar uma posição" id="move-back">▼</button>
+</div>
+<button class="analyze-button" disabled id="analyze-button">Analisar produto</button>
+</div>
+</div>
+</section>
+<section aria-labelledby="results-title" class="screen info-screen" data-screen="results" id="results-screen">
+<article class="info-card result-card">
+<div aria-label="Ben comemorando" class="result-ben ben-face" role="img"></div>
+<p class="eyebrow">MISSÃO CONCLUÍDA</p><h1 id="results-title">Carrinho completo!</h1>
+<p>Você relacionou produtos cotidianos à função álcool e distinguiu produtos puros de misturas comerciais.</p>
+<div class="result-stats"><div><small>Pontuação</small><strong id="result-points">0</strong></div><div><small>Tempo</small><strong id="result-time">00:00</strong></div></div>
+<div class="result-products" id="result-products"></div>
+<button class="primary wide" id="restart-button">Jogar novamente</button>
+<button class="secondary wide" data-go="home">Voltar à entrada</button>
+</article>
+</section>
+</main>
+<dialog class="analysis-dialog" id="analysis-dialog">
+<form class="analysis-shell" method="dialog">
+<button aria-label="Fechar análise" class="dialog-close" id="analysis-close" value="cancel">×</button>
+<div class="analysis-scroll">
+<header class="analysis-header"><div aria-label="Ben apresentando a análise" class="analysis-ben ben-face" role="img"></div><div><p class="eyebrow">ANÁLISE MOLECULAR</p><h2 id="analysis-title">Produto</h2><p class="analysis-kind" id="analysis-kind"></p></div></header>
+<div class="mixture-alert" hidden id="mixture-alert"></div>
+<dl class="compound-grid">
+<div><dt>Composto representativo</dt><dd id="analysis-compound">—</dd></div>
+<div id="formula-box"><dt>Fórmula molecular</dt><dd id="analysis-formula">—</dd></div>
+<div id="condensed-box"><dt>Estrutura condensada</dt><dd id="analysis-condensed">—</dd></div>
+</dl>
+<h3>Qual é a função ou classificação principal?</h3>
+<div class="answer-list" id="answer-list"></div>
+<button class="secondary wide" id="hint-button" type="button">Ver pista</button>
+<p class="hint-text" hidden id="hint-text"></p>
+<div class="feedback-box" hidden id="feedback-box"></div>
+<section class="viewer-section" id="viewer-section">
+<div class="viewer-title"><strong>Modelo molecular</strong><span>Arraste para girar</span></div>
+<div class="molecule-viewer" id="molecule-viewer"><canvas id="molecule-canvas"></canvas></div>
+<div class="viewer-controls"><button aria-label="Diminuir molécula" id="zoom-out" type="button">−</button><button aria-label="Redefinir orientação" id="reset-view" type="button">↺</button><button aria-label="Ampliar molécula" id="zoom-in" type="button">+</button></div>
+</section>
+<button class="primary wide" hidden id="continue-button" type="button">Continuar explorando</button>
+</div>
+</form>
+</dialog>
+<dialog class="small-dialog" id="list-dialog">
+<article><button aria-label="Fechar lista" class="dialog-close" data-close-dialog="list-dialog">×</button><h2>Lista molecular</h2><p>Produtos corretos já colocados no carrinho:</p><div class="collected-list" id="collected-list"></div></article>
+</dialog>
+<dialog class="small-dialog" id="pause-dialog">
+<article><h2>Jogo pausado</h2><p>O cronômetro foi interrompido.</p><button class="primary wide" id="resume-button">Continuar</button><button class="secondary wide" data-go="home">Sair para a entrada</button></article>
+</dialog>
+<noscript>Ative o JavaScript para executar o jogo.</noscript>
+</body>
+</html>
