@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#14324a">
+  <title>Ben: Desafio Molecular — Mobile V6</title>
+  <style>
+    html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#dceee9}
+    iframe{display:block;width:100%;height:100%;border:0;background:#dceee9}
+  </style>
+</head>
+<body>
+  <iframe id="v5-app" title="Ben: Desafio Molecular — Mobile V6" src="mobile-v5.html?v=56e93ff"></iframe>
+  <script>
+  (function(){
+    "use strict";
+
+    var outer=document.getElementById("v5-app");
+    var installed=false;
+
+    function findApp(){
+      try{
+        var v5doc=outer.contentDocument;
+        var v4frame=v5doc&&v5doc.getElementById("v4-app");
+        var v4doc=v4frame&&v4frame.contentDocument;
+        var v3frame=v4doc&&v4doc.getElementById("ben-app");
+        var doc=v3frame&&v3frame.contentDocument;
+        if(!doc||!doc.getElementById("ben")||!doc.getElementById("scene"))return null;
+        return {doc:doc,win:v3frame.contentWindow};
+      }catch(error){
+        return null;
+      }
+    }
+
+    function ensureElement(parent,className,tagName){
+      var found=parent.querySelector("."+className);
+      if(found)return found;
+      var element=parent.ownerDocument.createElement(tagName||"span");
+      element.className=className;
+      parent.appendChild(element);
+      return element;
+    }
+
+    function install(){
+      if(installed)return;
+      var app=findApp();
+      if(!app){
+        window.setTimeout(install,120);
+        return;
+      }
+
+      installed=true;
+      var d=app.doc;
+      var w=app.win;
+
+      var css=d.createElement("style");
+      css.id="v6-ben-cart";
+      css.textContent=`
+      /* V6 Critical 1 — Ben maior e carrinho integrado; lógica da V5 preservada. */
+
+      .hero-cart{
+        right:6%!important;
+        bottom:6%!important;
+        width:108px!important;
+        height:62px!important;
+      }
+      .hero-cart i,.hero-cart b{
+        width:18px!important;
+        height:18px!important;
+        bottom:-18px!important;
+      }
+
+      .ben-unit{
+        width:178px!important;
+        height:132px!important;
+        transform:translate(-50%,-50%)!important;
+        transform-origin:50% 70%!important;
+        overflow:visible!important;
+        z-index:14!important;
+      }
+
+      .ben-unit.dir-left{
+        transform:translate(-50%,-50%) scaleX(-1)!important;
+      }
+
+      .ben-character{
+        left:2px!important;
+        top:-7px!important;
+        width:112px!important;
+        height:114px!important;
+        object-fit:contain!important;
+        z-index:5!important;
+        filter:drop-shadow(0 7px 5px #0003)!important;
+        transform-origin:53% 80%!important;
+      }
+
+      .cart{
+        left:99px!important;
+        top:62px!important;
+        width:60px!important;
+        height:39px!important;
+        z-index:7!important;
+        box-shadow:inset 0 0 0 4px #14324a,0 9px 9px #102d3733!important;
+      }
+
+      .cart:before{
+        left:-29px!important;
+        top:-10px!important;
+        width:36px!important;
+        height:6px!important;
+        transform:rotate(7deg)!important;
+        box-shadow:none!important;
+      }
+
+      .cart-grid{
+        inset:7px 7px 11px!important;
+        background:
+          repeating-linear-gradient(90deg,transparent 0 8px,#14324a 9px 11px),
+          repeating-linear-gradient(0deg,transparent 0 7px,#14324a 8px 10px)!important;
+      }
+
+      .cart-rim{
+        left:4px!important;
+        right:4px!important;
+        top:3px!important;
+        height:6px!important;
+      }
+
+      .push-link{
+        left:77px!important;
+        top:57px!important;
+        width:31px!important;
+        height:7px!important;
+        border-radius:8px!important;
+        background:linear-gradient(90deg,#79880d,#b7bd25 48%,#14324a 50%,#14324a)!important;
+        transform:rotate(6deg)!important;
+        transform-origin:left center!important;
+        z-index:9!important;
+        box-shadow:0 2px 2px #0002!important;
+      }
+
+      .push-link:before{
+        content:"";
+        position:absolute;
+        left:-5px;
+        top:-3px;
+        width:12px;
+        height:12px;
+        border-radius:50%;
+        background:radial-gradient(circle at 35% 30%,#e7e84c,#8e970d 72%);
+        box-shadow:0 2px 2px #0003;
+      }
+
+      .wheel{
+        bottom:-13px!important;
+        width:17px!important;
+        height:17px!important;
+        border-width:3px!important;
+        z-index:8!important;
+      }
+      .wheel.w1{left:9px!important}
+      .wheel.w2{right:5px!important}
+
+      .unit-shadow{
+        left:4px!important;
+        right:5px!important;
+        bottom:0!important;
+        height:22px!important;
+        background:radial-gradient(ellipse at center,rgba(18,51,60,.28) 0 34%,rgba(18,51,60,.12) 52%,transparent 72%)!important;
+        filter:blur(1px);
+        z-index:1!important;
+      }
+
+      .ben-unit.moving .wheel{
+        animation:v6roll .28s linear infinite!important;
+      }
+      .ben-unit.dir-left.moving .wheel{
+        animation-direction:reverse!important;
+      }
+      .ben-unit.moving .ben-character{
+        animation:v6walk .28s ease-in-out infinite alternate!important;
+      }
+      .ben-unit.moving .cart{
+        animation:v6cart .36s ease-in-out infinite alternate!important;
+      }
+
+      @keyframes v6roll{
+        to{transform:rotate(360deg)}
+      }
+      @keyframes v6walk{
+        from{transform:translateY(0) rotate(-.8deg)}
+        to{transform:translateY(-4px) rotate(1.2deg)}
+      }
+      @keyframes v6cart{
+        from{translate:0 0;rotate:-.5deg}
+        to{translate:0 -1px;rotate:.8deg}
+      }
+
+      .ben-unit.dir-up .ben-character{
+        left:17px!important;
+        top:4px!important;
+      }
+      .ben-unit.dir-up .cart{
+        left:91px!important;
+        top:40px!important;
+      }
+      .ben-unit.dir-up .push-link{
+        left:72px!important;
+        top:49px!important;
+        transform:rotate(-10deg)!important;
+      }
+
+      .ben-unit.dir-down .ben-character{
+        left:10px!important;
+        top:-10px!important;
+      }
+      .ben-unit.dir-down .cart{
+        left:94px!important;
+        top:70px!important;
+      }
+      .ben-unit.dir-down .push-link{
+        left:75px!important;
+        top:61px!important;
+        transform:rotate(12deg)!important;
+      }
+
+      @media(max-width:420px){
+        .ben-unit{
+          width:168px!important;
+          height:126px!important;
+        }
+        .ben-character{
+          width:106px!important;
+          height:108px!important;
+        }
+        .cart{
+          left:94px!important;
+          top:59px!important;
+          width:58px!important;
+          height:38px!important;
+        }
+        .push-link{
+          left:73px!important;
+          top:54px!important;
+        }
+      }
+      `;
+      d.head.appendChild(css);
+
+      var ben=d.getElementById("ben");
+      if(ben){
+        var image=ben.querySelector("img");
+        if(image)image.classList.add("ben-character");
+
+        var cart=ben.querySelector(".cart");
+        if(cart){
+          ensureElement(cart,"cart-grid");
+          ensureElement(cart,"cart-rim");
+          if(!cart.querySelector(".wheel.w1")){
+            var wheel1=d.createElement("span");
+            wheel1.className="wheel w1";
+            cart.appendChild(wheel1);
+          }
+          if(!cart.querySelector(".wheel.w2")){
+            var wheel2=d.createElement("span");
+            wheel2.className="wheel w2";
+            cart.appendChild(wheel2);
+          }
+        }
+
+        if(!ben.querySelector(".unit-shadow")){
+          var shadow=d.createElement("span");
+          shadow.className="unit-shadow";
+          ben.insertBefore(shadow,ben.firstChild);
+        }
+
+        if(!ben.querySelector(".push-link")){
+          var link=d.createElement("span");
+          link.className="push-link";
+          if(cart)ben.insertBefore(link,cart);
+          else ben.appendChild(link);
+        }
+
+        var lastLeft=parseFloat(ben.style.left)||50;
+        var lastTop=parseFloat(ben.style.top)||88;
+        var stopTimer=0;
+
+        new w.MutationObserver(function(){
+          var left=parseFloat(ben.style.left);
+          var top=parseFloat(ben.style.top);
+          if(!Number.isFinite(left))left=lastLeft;
+          if(!Number.isFinite(top))top=lastTop;
+
+          var dx=left-lastLeft;
+          var dy=top-lastTop;
+
+          if(Math.abs(dx)>.01||Math.abs(dy)>.01){
+            ben.classList.remove("dir-left","dir-right","dir-up","dir-down");
+
+            if(Math.abs(dx)>=Math.abs(dy)){
+              ben.classList.add(dx<0?"dir-left":"dir-right");
+            }else{
+              ben.classList.add(dy<0?"dir-up":"dir-down");
+            }
+
+            ben.classList.add("moving");
+            clearTimeout(stopTimer);
+            stopTimer=setTimeout(function(){
+              ben.classList.remove("moving");
+            },140);
+          }
+
+          lastLeft=left;
+          lastTop=top;
+        }).observe(ben,{attributes:true,attributeFilter:["style"]});
+      }
+
+      var version=d.querySelector(".version");
+      if(version)version.textContent="mobile-v6 · Ben + carrinho integrados · 3D local";
+    }
+
+    outer.addEventListener("load",install);
+    install();
+  })();
+  </script>
+</body>
+</html>
