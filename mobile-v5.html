@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#14324a">
+  <title>Ben: Desafio Molecular — Mobile V5</title>
+  <style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#dceee9}iframe{display:block;width:100%;height:100%;border:0;background:#dceee9}</style>
+</head>
+<body>
+  <iframe id="v4-app" title="Ben: Desafio Molecular — Mobile V5" src="mobile-v4.html?v=0c204fc"></iframe>
+  <script>
+  (function(){
+    "use strict";
+    var outer=document.getElementById("v4-app"),installed=false;
+    function findApp(){
+      try{
+        var v4doc=outer.contentDocument,inner=v4doc&&v4doc.getElementById("ben-app");
+        if(!inner||!inner.contentDocument)return null;
+        var doc=inner.contentDocument;
+        if(!doc.getElementById("scene")||doc.querySelectorAll(".product").length<8)return null;
+        return {doc:doc,win:inner.contentWindow};
+      }catch(e){return null}
+    }
+    function install(){
+      if(installed)return;
+      var app=findApp();if(!app){setTimeout(install,120);return}
+      installed=true;var d=app.doc,w=app.win;
+      var css=d.createElement("style");css.id="v5-art";css.textContent=`
+      /* V5: arte de supermercado; lógica e visualizador molecular permanecem os da V4. */
+      .hero-cart{right:8%!important;bottom:8%!important;width:92px!important;height:55px!important;border:0!important;border-radius:5px 9px 12px 8px!important;transform:none!important;background:linear-gradient(180deg,rgba(169,219,228,.8),rgba(96,173,190,.58))!important;clip-path:polygon(8% 0,100% 0,86% 75%,18% 75%)!important;box-shadow:inset 0 0 0 4px #14324a,0 12px 20px #14324a2e!important}
+      .hero-cart:before{left:-25px!important;top:-10px!important;width:37px!important;height:6px!important;transform:rotate(12deg)!important;background:#14324a!important;box-shadow:20px 7px 0 -1px #14324a!important}.hero-cart:after{content:"";position:absolute;inset:7px 8px 13px;background:repeating-linear-gradient(90deg,transparent 0 11px,#14324a 12px 14px),repeating-linear-gradient(0deg,transparent 0 9px,#14324a 10px 12px);opacity:.78;clip-path:polygon(2% 0,98% 0,85% 100%,15% 100%)}
+      .hero-cart i,.hero-cart b{bottom:-16px!important;width:16px!important;height:16px!important;border:3px solid #e3eeee!important;background:conic-gradient(#14324a 0 20%,#8aa0a8 20% 35%,#14324a 35% 55%,#8aa0a8 55% 70%,#14324a 70%)!important}.hero-cart i{left:18px!important}.hero-cart b{right:13px!important}
+      .sector-label{display:none!important}.gondola{position:absolute;z-index:1;width:45%;height:25%;border-radius:13px 13px 7px 7px;background:linear-gradient(90deg,#eff5f5,#d7e4e5);border:3px solid #fff;box-shadow:8px 10px 0 #78949c,8px 18px 25px #173a4528}.gondola-tl{left:3%;top:7%;--back:#f7dfec}.gondola-tr{right:3%;top:7%;--back:#d9f0ec}.gondola-bl{left:3%;top:50%;--back:#f7ebc8}.gondola-br{right:3%;top:50%;--back:#dceaf6}
+      .gondola-sign{position:absolute;left:7px;right:7px;top:-28px;height:29px;display:grid;place-items:center;border-radius:9px 9px 3px 3px;background:linear-gradient(180deg,#fff,#e6efef);border:2px solid #fff;color:#294f5d;font-size:.56rem;font-weight:1000;letter-spacing:.075em;box-shadow:0 5px 9px #173a451c;white-space:nowrap}.gondola-back{position:absolute;inset:5px 5px 23px;border-radius:7px;background:linear-gradient(180deg,var(--back),#f7faf9);box-shadow:inset 0 0 0 2px #ffffffb8}.gondola-divider{position:absolute;left:50%;top:8px;bottom:24px;width:3px;transform:translateX(-50%);background:#a9bec2;box-shadow:1px 0 #fff}.gondola-shelf{position:absolute;left:2px;right:2px;bottom:21px;height:9px;border-radius:3px;background:linear-gradient(180deg,#fff,#c7d6d8);box-shadow:0 4px 0 #718e96}.gondola-base{position:absolute;left:-2px;right:-2px;bottom:0;height:22px;border-radius:3px 3px 6px 6px;background:linear-gradient(180deg,#f8fbfb,#b9cbce);border-top:3px solid #fff}
+      .product{width:21%!important;height:20%!important;min-width:76px;max-width:145px;min-height:112px;max-height:170px;z-index:5!important;overflow:visible}.product-stand,.product-icon{display:none!important}.product-package{position:absolute;left:50%;top:7%;width:58px;height:75px;transform:translateX(-50%);filter:drop-shadow(4px 7px 5px #102c3635);transition:transform .16s,filter .16s}.pkg-body,.pkg-top,.pkg-label,.pkg-detail{position:absolute;display:block}.pkg-body{left:9px;right:9px;bottom:4px;top:17px;border:3px solid rgba(255,255,255,.9);box-shadow:inset -7px -7px 10px rgba(23,50,71,.12),inset 6px 5px 8px rgba(255,255,255,.5)}.pkg-top{left:20px;right:20px;top:5px;height:16px;border-radius:5px 5px 2px 2px;background:#254b5d;box-shadow:inset 0 3px rgba(255,255,255,.35)}.pkg-label{left:12px;right:12px;bottom:17px;min-height:19px;padding:3px 1px;border-radius:4px;display:grid;place-items:center;background:#fffef6;color:#24404c;font-size:.42rem;font-weight:1000;line-height:1;text-align:center;box-shadow:0 1px 3px #0002}.pkg-detail{display:none}.product-name{left:4%!important;right:4%!important;bottom:0!important;padding:5px 2px!important;border-radius:6px!important;background:#fff!important;border:1px solid #c7d6d8!important;color:#234451!important;font-size:.58rem!important;line-height:1!important;box-shadow:0 3px 0 #9db2b7!important}.product.near .product-package{transform:translateX(-50%) translateY(-5px) scale(1.06);filter:drop-shadow(0 0 10px #ffd94e) drop-shadow(4px 8px 5px #102c3644)}.product.near .product-name{outline:3px solid #ffd94e}.product.done{opacity:.52!important}.product.done:after{right:4%!important;top:0!important}
+      .pkg-perfume .pkg-body{left:7px;right:7px;top:24px;border-radius:9px 9px 13px 13px;background:linear-gradient(145deg,#fbe5f2,#d979af 68%,#b64c88)}.pkg-perfume .pkg-top{left:19px;right:19px;background:linear-gradient(#d4b85e,#927126)}.pkg-perfume .pkg-detail{display:block;right:4px;top:9px;width:18px;height:4px;border-radius:5px;background:#927126;box-shadow:-9px 4px 0 -1px #927126}
+      .pkg-acetone .pkg-body{border-radius:10px 10px 14px 14px;background:linear-gradient(145deg,#fdfcff,#e9d8f3 63%,#caa5dc)}.pkg-acetone .pkg-top{background:linear-gradient(#7b4a93,#4a2861)}.pkg-acetone .pkg-label{background:#76508c;color:#fff}
+      .pkg-gel .pkg-body{top:21px;border-radius:10px 10px 13px 13px;background:linear-gradient(145deg,rgba(230,255,249,.94),rgba(82,198,172,.72))}.pkg-gel .pkg-top{top:9px;height:13px;background:#278a75}.pkg-gel .pkg-detail{display:block;left:27px;top:4px;width:25px;height:6px;border-radius:4px;background:#278a75;box-shadow:-7px 4px 0 -1px #278a75}
+      .pkg-antiseptic .pkg-body{left:8px;right:8px;top:19px;border-radius:7px 7px 15px 15px;background:linear-gradient(145deg,#e7f5ff,#71aee2 67%,#3973ad)}.pkg-antiseptic .pkg-top{left:18px;right:18px;background:#1e537d}.pkg-antiseptic .pkg-detail{display:grid;place-items:center;left:22px;top:29px;width:15px;height:15px;border-radius:50%;background:#fff;color:#2e78ad;font-weight:1000}.pkg-antiseptic .pkg-detail:before{content:"+"}.pkg-antiseptic .pkg-label{font-size:.36rem}
+      .pkg-vinegar .pkg-body{left:14px;right:14px;top:16px;border-radius:8px 8px 12px 12px;background:linear-gradient(90deg,rgba(255,255,255,.72),rgba(242,201,89,.82) 46%,rgba(199,139,31,.9));clip-path:polygon(22% 0,78% 0,100% 18%,91% 100%,9% 100%,0 18%)}.pkg-vinegar .pkg-top{left:22px;right:22px;top:3px;background:#b9473c}
+      .pkg-oil .pkg-body{left:13px;right:13px;top:13px;border-radius:7px 7px 13px 13px;background:linear-gradient(90deg,#fff7a7,#f1c73e 55%,#c89d19)}.pkg-oil .pkg-top{left:21px;right:21px;top:2px;background:#3f8055}.pkg-oil .pkg-label{background:#3f8055;color:#fff}
+      .pkg-salt .pkg-body{left:7px;right:7px;top:14px;border-radius:4px;background:linear-gradient(150deg,#fff,#e4edf2);clip-path:polygon(5% 0,95% 0,100% 100%,0 100%)}.pkg-salt .pkg-top{left:7px;right:7px;top:7px;height:9px;background:#5293b4}.pkg-salt .pkg-label{bottom:21px;background:#3f86a9;color:#fff;font-size:.55rem}.pkg-salt .pkg-detail{display:block;left:20px;right:20px;bottom:7px;height:8px;border-radius:50%;background:radial-gradient(circle,#a9c4d1 0 1px,transparent 1.5px);background-size:5px 5px}
+      .pkg-soda .pkg-body{left:14px;right:14px;top:10px;border-radius:10px 10px 13px 13px;background:linear-gradient(90deg,#6e1d2d,#c83e55 48%,#742233);clip-path:polygon(24% 0,76% 0,91% 14%,100% 100%,0 100%,9% 14%)}.pkg-soda .pkg-top{left:22px;right:22px;top:1px;height:12px;background:#bfc5c8}.pkg-soda .pkg-label{background:#fff;color:#b82e46}.pkg-soda .pkg-detail{display:block;right:12px;top:28px;width:6px;height:6px;border-radius:50%;background:#fff8;box-shadow:-9px 8px 0 #fff8,-2px 16px 0 #fff8}
+      .ben-unit{width:132px!important;height:96px!important;transform:translate(-50%,-50%)!important;z-index:12!important}.ben-unit.dir-left{transform:translate(-50%,-50%) scaleX(-1)!important}.unit-shadow{position:absolute;left:7px;right:2px;bottom:0;height:17px;border-radius:50%;background:radial-gradient(ellipse,#17384238,transparent 69%)}.ben-character{position:absolute!important;left:1px!important;top:5px!important;width:76px!important;height:78px!important;object-fit:contain;z-index:4;filter:drop-shadow(0 5px 4px #0003)}.push-link{position:absolute;left:56px;top:43px;width:24px;height:5px;border-radius:5px;background:#14324a;transform:rotate(8deg);z-index:5}
+      .cart{left:62px!important;top:36px!important;width:66px!important;height:42px!important;border:0!important;border-radius:4px 7px 8px 5px!important;transform:none!important;background:linear-gradient(180deg,rgba(169,219,228,.83),rgba(74,155,177,.55))!important;clip-path:polygon(7% 0,100% 0,85% 76%,18% 76%)!important;box-shadow:inset 0 0 0 4px #14324a,0 8px 8px #102d3731!important;z-index:3}.cart:before{left:-20px!important;top:-8px!important;width:28px!important;height:5px!important;transform:rotate(10deg)!important;background:#14324a!important;box-shadow:16px 5px 0 -1px #14324a!important}.cart-grid{position:absolute;inset:7px 7px 12px;background:repeating-linear-gradient(90deg,transparent 0 8px,#14324a 9px 11px),repeating-linear-gradient(0deg,transparent 0 7px,#14324a 8px 10px);opacity:.78;clip-path:polygon(2% 0,98% 0,85% 100%,15% 100%)}.cart-rim{position:absolute;left:5px;right:4px;top:3px;height:6px;border-radius:6px;background:#14324a}.wheel{bottom:-10px!important;width:15px!important;height:15px!important;border:3px solid #e2eeee!important;background:conic-gradient(#14324a 0 18%,#80959e 18% 34%,#14324a 34% 52%,#80959e 52% 68%,#14324a 68%)!important}.wheel.w1{left:11px!important}.wheel.w2{right:7px!important}.ben-unit.moving .wheel{animation:v5roll .35s linear infinite}.ben-unit.dir-left.moving .wheel{animation-direction:reverse}.ben-unit.moving .ben-character{animation:v5walk .32s ease-in-out infinite alternate}@keyframes v5roll{to{transform:rotate(360deg)}}@keyframes v5walk{to{transform:translateY(-3px) rotate(1.5deg)}}
+      .checkout-body{background:linear-gradient(155deg,#496b76,#244753)!important}.checkout-body:after{content:"";position:absolute;right:8px;top:-18px;width:26px;height:28px;border-radius:5px;background:#1b3b49;border:3px solid #fff;box-shadow:inset 0 0 0 5px #86c7ae}
+      @media(max-width:700px){.hero-cart{right:11%!important;bottom:5%!important;width:78px!important;height:48px!important}.gondola{height:23.5%}.gondola-tl,.gondola-tr{top:8%}.gondola-bl,.gondola-br{top:51%}.gondola-sign{top:-25px;height:26px;font-size:.51rem}.product{height:19%!important;min-height:100px}.product-package{width:51px;height:68px;top:6%}.product-name{font-size:.54rem!important}.ben-unit{width:122px!important;height:91px!important}.ben-character{width:70px!important;height:72px!important}.cart{left:57px!important;top:35px!important;width:61px!important;height:39px!important}.push-link{left:52px;top:42px}}
+      `;d.head.appendChild(css);
+
+      var scene=d.getElementById("scene");
+      d.querySelectorAll(".sector-label").forEach(function(e){e.remove()});
+      [
+        ["gondola-tl","HIGIENE E BELEZA"],["gondola-tr","CUIDADOS PESSOAIS"],
+        ["gondola-bl","MERCEARIA"],["gondola-br","BEBIDAS E LIMPEZA"]
+      ].forEach(function(item){var g=d.createElement("div");g.className="gondola "+item[0];g.setAttribute("aria-hidden","true");g.innerHTML='<span class="gondola-sign">'+item[1]+'</span><span class="gondola-back"></span><span class="gondola-divider"></span><span class="gondola-shelf"></span><span class="gondola-base"></span>';scene.insertBefore(g,scene.firstChild)});
+
+      var labels={perfume:"PERFUME",acetone:"REMOVEDOR",gel:"ÁLCOOL GEL",antiseptic:"ANTISSÉPTICO",vinegar:"VINAGRE",oil:"ÓLEO",salt:"SAL",soda:"REFRI"};
+      d.querySelectorAll(".product").forEach(function(p){var id=p.dataset.id,name=p.querySelector(".product-name")?p.querySelector(".product-name").textContent:id;p.innerHTML='<span class="product-package pkg-'+id+'"><span class="pkg-top"></span><span class="pkg-body"></span><span class="pkg-label">'+labels[id]+'</span><span class="pkg-detail"></span></span><span class="product-name">'+name+'</span>'});
+
+      var hero=d.querySelector(".hero-cart");if(hero&&!hero.querySelector(".hero-cart-grid")){hero.insertAdjacentHTML("afterbegin",'<span class="hero-cart-grid"></span><span class="hero-cart-rim"></span>')}
+      var ben=d.getElementById("ben");if(ben){ben.classList.add("dir-right");var img=ben.querySelector("img");if(img)img.className="ben-character";ben.insertAdjacentHTML("afterbegin",'<span class="unit-shadow"></span>');var cart=ben.querySelector(".cart");if(cart){cart.insertAdjacentHTML("afterbegin",'<span class="cart-grid"></span><span class="cart-rim"></span>');cart.insertAdjacentHTML("beforebegin",'<span class="push-link"></span>')}}
+
+      var lastX=parseFloat(ben&&ben.style.left)||50,stopTimer=0;
+      if(ben)new w.MutationObserver(function(){var x=parseFloat(ben.style.left)||lastX,dx=x-lastX;if(Math.abs(dx)>.01){ben.classList.toggle("dir-left",dx<0);ben.classList.toggle("dir-right",dx>=0);ben.classList.add("moving");clearTimeout(stopTimer);stopTimer=setTimeout(function(){ben.classList.remove("moving")},120)}lastX=x}).observe(ben,{attributes:true,attributeFilter:["style"]});
+
+      var version=d.querySelector(".version");if(version)version.textContent="mobile-v5 · supermercado visual · 3D local";
+    }
+    outer.addEventListener("load",install);install();
+  })();
+  </script>
+</body>
+</html>
