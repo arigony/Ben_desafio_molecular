@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#14324a">
+  <title>Ben: Desafio Molecular — Mobile V4</title>
+  <style>
+    html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#dceee9}
+    iframe{display:block;width:100%;height:100%;border:0;background:#dceee9}
+  </style>
+</head>
+<body>
+  <iframe id="ben-app" title="Ben: Desafio Molecular — Mobile V4" src="mobile-v3.html?v=6278256"></iframe>
+  <script>
+  (function(){
+    "use strict";
+    var ELEMENTS={
+      H:{color:"#f4f5f6",dark:"#aeb8bf",radius:.30,covalent:.31},
+      C:{color:"#252a31",dark:"#090b0e",radius:.48,covalent:.76},
+      O:{color:"#ee2d2d",dark:"#8f0909",radius:.45,covalent:.66},
+      N:{color:"#2767d6",dark:"#0b2d78",radius:.46,covalent:.71},
+      Cl:{color:"#39a94a",dark:"#126521",radius:.60,covalent:1.02},
+      Na:{color:"#8d67d5",dark:"#4f2f94",radius:.63,covalent:1.66},
+      S:{color:"#e0b72e",dark:"#8d6d06",radius:.58,covalent:1.05}
+    };
+
+    function shade(hex,amount){
+      var value=parseInt(hex.slice(1),16),r=Math.max(0,Math.min(255,(value>>16)+amount)),g=Math.max(0,Math.min(255,((value>>8)&255)+amount)),b=Math.max(0,Math.min(255,(value&255)+amount));
+      return "rgb("+r+","+g+","+b+")";
+    }
+
+    function parseXYZ(xyz){
+      var lines=String(xyz||"").trim().split(/\r?\n/),count=parseInt(lines[0],10)||0,atoms=[];
+      for(var i=0;i<count;i+=1){
+        var parts=(lines[i+2]||"").trim().split(/\s+/);
+        if(parts.length<4)continue;
+        atoms.push({index:i,el:parts[0],x:Number(parts[1]),y:Number(parts[2]),z:Number(parts[3])});
+      }
+      if(!atoms.length)throw new Error("Modelo sem átomos");
+      var cx=0,cy=0,cz=0;
+      atoms.forEach(function(atom){cx+=atom.x;cy+=atom.y;cz+=atom.z});
+      cx/=atoms.length;cy/=atoms.length;cz/=atoms.length;
+      atoms.forEach(function(atom){atom.x-=cx;atom.y-=cy;atom.z-=cz});
+      var bonds=[];
+      for(var a=0;a<atoms.length;a+=1){
+        for(var b=a+1;b<atoms.length;b+=1){
+          var dx=atoms[a].x-atoms[b].x,dy=atoms[a].y-atoms[b].y,dz=atoms[a].z-atoms[b].z;
+          var distance=Math.sqrt(dx*dx+dy*dy+dz*dz),ea=ELEMENTS[atoms[a].el]||{covalent:.75},eb=ELEMENTS[atoms[b].el]||{covalent:.75};
+          var ionic=(atoms[a].el==="Na"&&atoms[b].el==="Cl")||(atoms[a].el==="Cl"&&atoms[b].el==="Na");
+          var limit=ionic?2.7:(ea.covalent+eb.covalent)*1.23;
+          if(distance>.22&&distance<=limit){
+            var carbonyl=((atoms[a].el==="C"&&atoms[b].el==="O")||(atoms[a].el==="O"&&atoms[b].el==="C"))&&distance<1.31;
+            bonds.push({a:a,b:b,order:carbonyl?2:1,ionic:ionic});
+          }
+        }
+      }
+      return {atoms:atoms,bonds:bonds};
+    }
+
+    function createViewer(container){
+      var doc=container.ownerDocument,win=doc.defaultView;
+      container.innerHTML="";
+      var canvas=doc.createElement("canvas"),ctx=canvas.getContext("2d");
+      canvas.setAttribute("aria-label","Modelo molecular tridimensional em estilo bola e bastão. Arraste para girar e faça pinça para ampliar.");
+      canvas.style.cssText="display:block;width:100%;height:100%;touch-action:none;cursor:grab";
+      container.appendChild(canvas);
+      var state={atoms:[],bonds:[],rx:-.34,ry:.58,zoom:1,pointers:new Map(),lastX:0,lastY:0,pinchDistance:0,frame:0};
+
+      function schedule(){if(!state.frame)state.frame=win.requestAnimationFrame(function(){state.frame=0;draw()})}
+      function rotate(atom){
+        var cx=Math.cos(state.rx),sx=Math.sin(state.rx),cy=Math.cos(state.ry),sy=Math.sin(state.ry),y=atom.y*cx-atom.z*sx,z1=atom.y*sx+atom.z*cx;
+        return {index:atom.index,el:atom.el,x:atom.x*cy+z1*sy,y:y,z:-atom.x*sy+z1*cy};
+      }
+      function drawSegment(a,b,width,colorA,colorB,dashed){
+        var mx=(a.px+b.px)/2,my=(a.py+b.py)/2;
+        ctx.save();ctx.lineCap="round";ctx.lineWidth=width+3;ctx.strokeStyle="rgba(20,32,38,.28)";
+        if(dashed)ctx.setLineDash([8,7]);
+        ctx.beginPath();ctx.moveTo(a.px,a.py);ctx.lineTo(b.px,b.py);ctx.stroke();
+        ctx.lineWidth=width;ctx.strokeStyle=colorA;ctx.beginPath();ctx.moveTo(a.px,a.py);ctx.lineTo(mx,my);ctx.stroke();
+        ctx.strokeStyle=colorB;ctx.beginPath();ctx.moveTo(mx,my);ctx.lineTo(b.px,b.py);ctx.stroke();
+        ctx.globalAlpha=.38;ctx.lineWidth=Math.max(1.5,width*.23);ctx.strokeStyle="#fff";ctx.beginPath();ctx.moveTo(a.px-1,a.py-1);ctx.lineTo(b.px-1,b.py-1);ctx.stroke();ctx.restore();
+      }
+      function drawBond(bond,projected,scale){
+        var a=projected[bond.a],b=projected[bond.b],ea=ELEMENTS[a.el]||ELEMENTS.C,eb=ELEMENTS[b.el]||ELEMENTS.C,width=Math.max(5,Math.min(13,scale*.13));
+        if(bond.ionic){drawSegment(a,b,width*.55,"#a9b2b7","#a9b2b7",true);return}
+        var dx=b.px-a.px,dy=b.py-a.py,len=Math.max(1,Math.sqrt(dx*dx+dy*dy)),ox=-dy/len,oy=dx/len;
+        if(bond.order===2){
+          var offset=Math.max(4,width*.48);
+          drawSegment({px:a.px+ox*offset,py:a.py+oy*offset},{px:b.px+ox*offset,py:b.py+oy*offset},width*.64,ea.color,eb.color,false);
+          drawSegment({px:a.px-ox*offset,py:a.py-oy*offset},{px:b.px-ox*offset,py:b.py-oy*offset},width*.64,ea.color,eb.color,false);
+        }else drawSegment(a,b,width,ea.color,eb.color,false);
+      }
+      function drawAtom(atom,scale){
+        var element=ELEMENTS[atom.el]||ELEMENTS.C,r=Math.max(8,element.radius*scale*.66*atom.perspective);
+        ctx.save();ctx.shadowColor="rgba(0,0,0,.24)";ctx.shadowBlur=Math.max(5,r*.28);ctx.shadowOffsetY=Math.max(2,r*.12);
+        var gradient=ctx.createRadialGradient(atom.px-r*.38,atom.py-r*.42,Math.max(1,r*.06),atom.px,atom.py,r);
+        gradient.addColorStop(0,"#fff");gradient.addColorStop(.14,shade(element.color,42));gradient.addColorStop(.38,element.color);gradient.addColorStop(.78,shade(element.color,-25));gradient.addColorStop(1,element.dark);
+        ctx.fillStyle=gradient;ctx.beginPath();ctx.arc(atom.px,atom.py,r,0,Math.PI*2);ctx.fill();ctx.shadowColor="transparent";
+        ctx.lineWidth=Math.max(1.2,r*.055);ctx.strokeStyle="rgba(255,255,255,.72)";ctx.stroke();
+        var glint=ctx.createRadialGradient(atom.px-r*.34,atom.py-r*.38,0,atom.px-r*.34,atom.py-r*.38,r*.32);
+        glint.addColorStop(0,"rgba(255,255,255,.95)");glint.addColorStop(1,"rgba(255,255,255,0)");ctx.fillStyle=glint;ctx.beginPath();ctx.arc(atom.px-r*.27,atom.py-r*.31,r*.28,0,Math.PI*2);ctx.fill();
+        if(atom.el==="Na"||atom.el==="Cl"){
+          ctx.fillStyle="#fff";ctx.font="900 "+Math.max(10,Math.min(17,r*.7))+"px system-ui,sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(atom.el,atom.px,atom.py+1);
+        }
+        ctx.restore();
+      }
+      function draw(){
+        var rect=container.getBoundingClientRect(),w=Math.max(1,rect.width),h=Math.max(1,rect.height),dpr=Math.min(2,win.devicePixelRatio||1),pw=Math.round(w*dpr),ph=Math.round(h*dpr);
+        if(canvas.width!==pw||canvas.height!==ph){canvas.width=pw;canvas.height=ph}
+        canvas.style.width=w+"px";canvas.style.height=h+"px";ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+        var bg=ctx.createLinearGradient(0,0,0,h);bg.addColorStop(0,"#f7f8f9");bg.addColorStop(1,"#e5e8ea");ctx.fillStyle=bg;ctx.fillRect(0,0,w,h);
+        if(!state.atoms.length)return;
+        var projected=state.atoms.map(rotate),extent=1;
+        projected.forEach(function(atom){extent=Math.max(extent,Math.abs(atom.x),Math.abs(atom.y),Math.abs(atom.z))});
+        var scale=Math.min(w,h)*.39/extent*state.zoom;
+        projected.forEach(function(atom){atom.perspective=1+Math.max(-.22,Math.min(.22,atom.z/(extent*5)));atom.px=w/2+atom.x*scale*atom.perspective;atom.py=h/2-atom.y*scale*atom.perspective-4});
+        var minX=w,maxX=0,maxY=0;projected.forEach(function(atom){minX=Math.min(minX,atom.px);maxX=Math.max(maxX,atom.px);maxY=Math.max(maxY,atom.py)});
+        var shadow=ctx.createRadialGradient((minX+maxX)/2,Math.min(h-18,maxY+24),3,(minX+maxX)/2,Math.min(h-18,maxY+24),Math.max(28,(maxX-minX)*.47));
+        shadow.addColorStop(0,"rgba(25,37,43,.19)");shadow.addColorStop(1,"rgba(25,37,43,0)");ctx.fillStyle=shadow;ctx.beginPath();ctx.ellipse((minX+maxX)/2,Math.min(h-18,maxY+24),Math.max(30,(maxX-minX)*.48),10,0,0,Math.PI*2);ctx.fill();
+        state.bonds.map(function(bond){return {bond:bond,z:(projected[bond.a].z+projected[bond.b].z)/2}}).sort(function(a,b){return a.z-b.z}).forEach(function(entry){drawBond(entry.bond,projected,scale)});
+        projected.slice().sort(function(a,b){return a.z-b.z}).forEach(function(atom){drawAtom(atom,scale)});
+      }
+      function pointerDistance(){var points=Array.from(state.pointers.values());if(points.length<2)return 0;return Math.hypot(points[0].x-points[1].x,points[0].y-points[1].y)}
+      canvas.addEventListener("pointerdown",function(event){event.preventDefault();canvas.setPointerCapture&&canvas.setPointerCapture(event.pointerId);state.pointers.set(event.pointerId,{x:event.clientX,y:event.clientY});state.lastX=event.clientX;state.lastY=event.clientY;if(state.pointers.size===2)state.pinchDistance=pointerDistance();canvas.style.cursor="grabbing"});
+      canvas.addEventListener("pointermove",function(event){if(!state.pointers.has(event.pointerId))return;event.preventDefault();state.pointers.set(event.pointerId,{x:event.clientX,y:event.clientY});if(state.pointers.size>=2){var distance=pointerDistance();if(state.pinchDistance>0)state.zoom=Math.max(.6,Math.min(2.2,state.zoom*distance/state.pinchDistance));state.pinchDistance=distance}else{state.ry+=(event.clientX-state.lastX)*.012;state.rx+=(event.clientY-state.lastY)*.012;state.lastX=event.clientX;state.lastY=event.clientY}schedule()});
+      function release(event){state.pointers.delete(event.pointerId);if(state.pointers.size<2)state.pinchDistance=0;canvas.style.cursor="grab"}
+      canvas.addEventListener("pointerup",release);canvas.addEventListener("pointercancel",release);
+      canvas.addEventListener("wheel",function(event){event.preventDefault();state.zoom=Math.max(.6,Math.min(2.2,state.zoom*(event.deltaY>0?.9:1.1)));schedule()},{passive:false});
+      win.addEventListener("resize",schedule,{passive:true});if(win.ResizeObserver)new win.ResizeObserver(schedule).observe(container);
+
+      var api={
+        removeAllModels:function(){state.atoms=[];state.bonds=[];schedule()},
+        addModel:function(xyz){var parsed=parseXYZ(xyz);state.atoms=parsed.atoms;state.bonds=parsed.bonds;state.rx=-.34;state.ry=.58;state.zoom=1;schedule();return{}},
+        setStyle:function(){},zoomTo:function(){state.zoom=1;schedule()},setSpin:function(){},render:schedule,resize:schedule,
+        zoomBy:function(factor){state.zoom=Math.max(.6,Math.min(2.2,state.zoom*factor));schedule()},
+        reset:function(){state.rx=-.34;state.ry=.58;state.zoom=1;schedule()}
+      };
+      container.__benV4Viewer=api;
+      return api;
+    }
+
+    function enhanceViewerUI(appDocument){
+      var panel=appDocument.querySelector(".viewer-panel");if(!panel||panel.querySelector(".v4-viewer-tools"))return;
+      var style=appDocument.createElement("style");style.textContent=".viewer-panel{background:linear-gradient(180deg,#f7f8f9,#e5e8ea)!important}.v4-viewer-tools{position:absolute;right:9px;top:9px;z-index:8;display:flex;gap:6px;padding:5px;border-radius:14px;background:#ffffffdc;box-shadow:0 5px 18px #14324a24}.v4-viewer-tools button{width:40px;height:40px;border:1px solid #c9d6da;border-radius:11px;background:#fff;color:#14324a;font-size:1.1rem;font-weight:1000}.v4-viewer-caption{position:absolute;left:10px;right:10px;bottom:7px;z-index:7;text-align:center;font:850 .69rem system-ui,sans-serif;color:#536a73;pointer-events:none;text-shadow:0 1px 0 #fff}";appDocument.head.appendChild(style);
+      var tools=appDocument.createElement("div");tools.className="v4-viewer-tools";tools.innerHTML='<button type="button" data-v4="out" aria-label="Diminuir molécula">−</button><button type="button" data-v4="reset" aria-label="Restaurar orientação">↺</button><button type="button" data-v4="in" aria-label="Aumentar molécula">+</button>';
+      var caption=appDocument.createElement("div");caption.className="v4-viewer-caption";caption.textContent="Arraste para girar · faça pinça para ampliar";panel.appendChild(tools);panel.appendChild(caption);
+      tools.addEventListener("click",function(event){var action=event.target&&event.target.getAttribute("data-v4"),viewer=appDocument.getElementById("viewer").__benV4Viewer;if(!viewer)return;if(action==="in")viewer.zoomBy(1.16);if(action==="out")viewer.zoomBy(.86);if(action==="reset")viewer.reset()});
+    }
+
+    document.getElementById("ben-app").addEventListener("load",function(){
+      try{
+        var appWindow=this.contentWindow,appDocument=this.contentDocument;
+        appWindow.$3Dmol={createViewer:createViewer};
+        enhanceViewerUI(appDocument);
+        var version=appDocument.querySelector(".version");if(version)version.textContent="mobile-v4 · visual MolecuAR · 3D local";
+        appWindow.console.info("Ben Mobile V4: renderizador molecular local estilo ball-and-stick ativado.");
+      }catch(error){console.error("Não foi possível ativar a Mobile V4.",error)}
+    });
+  })();
+  </script>
+</body>
+</html>
