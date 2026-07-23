@@ -25,6 +25,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Build Mobile V7
+        run: python3 .github/scripts/build_v7.py
+
       - name: Inject build version
         env:
           BUILD_SHA: ${{ github.sha }}
