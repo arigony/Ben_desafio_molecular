@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#14324a">
+  <title>Ben: Desafio Molecular — V3 3D local</title>
+  <style>
+    html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#dceee9}
+    iframe{display:block;width:100%;height:100%;border:0;background:#dceee9}
+  </style>
+</head>
+<body>
+  <iframe id="ben-app" title="Ben: Desafio Molecular" src="mobile-v3.html?v=6278256"></iframe>
+  <script>
+  (function(){
+    "use strict";
+    var COLORS={H:"#f7f7f7",C:"#343c48",O:"#e34b4b",N:"#4775dd",Cl:"#3aa75c",Na:"#8561c5",S:"#d5ad2d"};
+    var RADII={H:.30,C:.48,O:.45,N:.46,Cl:.60,Na:.63,S:.58};
+    var COVALENT={H:.31,C:.76,O:.66,N:.71,Cl:1.02,Na:1.66,S:1.05};
+
+    function parseXYZ(xyz){
+      var lines=String(xyz||"").trim().split(/\r?\n/);
+      var count=parseInt(lines[0],10)||0, atoms=[];
+      for(var i=0;i<count;i+=1){
+        var parts=(lines[i+2]||"").trim().split(/\s+/);
+        if(parts.length<4)continue;
+        atoms.push({el:parts[0],x:Number(parts[1]),y:Number(parts[2]),z:Number(parts[3])});
+      }
+      if(!atoms.length)throw new Error("Modelo sem átomos");
+      var cx=0,cy=0,cz=0;
+      atoms.forEach(function(a){cx+=a.x;cy+=a.y;cz+=a.z});
+      cx/=atoms.length;cy/=atoms.length;cz/=atoms.length;
+      atoms.forEach(function(a){a.x-=cx;a.y-=cy;a.z-=cz});
+      var bonds=[];
+      for(var a=0;a<atoms.length;a+=1){
+        for(var b=a+1;b<atoms.length;b+=1){
+          var dx=atoms[a].x-atoms[b].x,dy=atoms[a].y-atoms[b].y,dz=atoms[a].z-atoms[b].z;
+          var distance=Math.sqrt(dx*dx+dy*dy+dz*dz);
+          var limit=((COVALENT[atoms[a].el]||.75)+(COVALENT[atoms[b].el]||.75))*1.26;
+          if(distance>.18&&distance<=limit)bonds.push([a,b]);
+        }
+      }
+      return {atoms:atoms,bonds:bonds};
+    }
+
+    function createViewer(container){
+      var doc=container.ownerDocument,win=doc.defaultView;
+      container.innerHTML="";
+      var canvas=doc.createElement("canvas");
+      canvas.setAttribute("aria-label","Modelo molecular tridimensional interativo. Arraste para girar.");
+      canvas.style.cssText="display:block;width:100%;height:100%;touch-action:none;cursor:grab";
+      container.appendChild(canvas);
+      var ctx=canvas.getContext("2d");
+      var state={atoms:[],bonds:[],rx:-.35,ry:.55,drag:false,lastX:0,lastY:0};
+
+      function rotate(atom){
+        var cx=Math.cos(state.rx),sx=Math.sin(state.rx),cy=Math.cos(state.ry),sy=Math.sin(state.ry);
+        var y=atom.y*cx-atom.z*sx,z=atom.y*sx+atom.z*cx;
+        return {el:atom.el,x:atom.x*cy+z*sy,y:y,z:-atom.x*sy+z*cy};
+      }
+
+      function draw(){
+        if(!state.atoms.length)return;
+        var rect=canvas.getBoundingClientRect(),w=Math.max(1,rect.width),h=Math.max(1,rect.height);
+        var dpr=Math.min(2,win.devicePixelRatio||1);
+        var pw=Math.round(w*dpr),ph=Math.round(h*dpr);
+        if(canvas.width!==pw||canvas.height!==ph){canvas.width=pw;canvas.height=ph}
+        ctx.setTransform(dpr,0,0,dpr,0,0);
+        ctx.clearRect(0,0,w,h);
+        var projected=state.atoms.map(rotate),extent=1;
+        projected.forEach(function(a){extent=Math.max(extent,Math.abs(a.x),Math.abs(a.y),Math.abs(a.z))});
+        var scale=Math.min(w,h)*.35/extent;
+        projected.forEach(function(a){
+          var perspective=1+Math.max(-.35,Math.min(.35,a.z/(extent*5)));
+          a.px=w/2+a.x*scale*perspective;
+          a.py=h/2-a.y*scale*perspective;
+          a.pr=(RADII[a.el]||.46)*scale*.62*perspective;
+        });
+        state.bonds.map(function(pair){
+          return {a:projected[pair[0]],b:projected[pair[1]],z:(projected[pair[0]].z+projected[pair[1]].z)/2};
+        }).sort(function(a,b){return a.z-b.z}).forEach(function(bond){
+          var gradient=ctx.createLinearGradient(bond.a.px,bond.a.py,bond.b.px,bond.b.py);
+          gradient.addColorStop(0,COLORS[bond.a.el]||"#777");
+          gradient.addColorStop(.5,"#b8c2c6");
+          gradient.addColorStop(1,COLORS[bond.b.el]||"#777");
+          ctx.strokeStyle=gradient;ctx.lineCap="round";ctx.lineWidth=Math.max(3,Math.min(9,scale*.11));
+          ctx.beginPath();ctx.moveTo(bond.a.px,bond.a.py);ctx.lineTo(bond.b.px,bond.b.py);ctx.stroke();
+        });
+        projected.sort(function(a,b){return a.z-b.z}).forEach(function(atom){
+          var r=Math.max(7,atom.pr),base=COLORS[atom.el]||"#888";
+          var gradient=ctx.createRadialGradient(atom.px-r*.35,atom.py-r*.38,r*.12,atom.px,atom.py,r);
+          gradient.addColorStop(0,"#fff");gradient.addColorStop(.24,base);gradient.addColorStop(1,"#18242d");
+          ctx.fillStyle=gradient;ctx.beginPath();ctx.arc(atom.px,atom.py,r,0,Math.PI*2);ctx.fill();
+          ctx.strokeStyle="#ffffffaa";ctx.lineWidth=1.2;ctx.stroke();
+          if(atom.el!=="H"){
+            ctx.fillStyle="#fff";ctx.font="900 "+Math.max(9,Math.min(15,r*.72))+"px system-ui,sans-serif";
+            ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(atom.el,atom.px,atom.py+.5);
+          }
+        });
+        ctx.fillStyle="rgba(20,50,74,.8)";ctx.font="800 12px system-ui,sans-serif";
+        ctx.textAlign="center";ctx.textBaseline="alphabetic";ctx.fillText("Arraste com o dedo para girar",w/2,h-12);
+      }
+
+      function coords(event){
+        var rect=canvas.getBoundingClientRect();
+        return {x:(event.clientX||0)-rect.left,y:(event.clientY||0)-rect.top};
+      }
+      canvas.addEventListener("pointerdown",function(event){
+        event.preventDefault();state.drag=true;
+        canvas.setPointerCapture&&canvas.setPointerCapture(event.pointerId);
+        var p=coords(event);state.lastX=p.x;state.lastY=p.y;canvas.style.cursor="grabbing";
+      });
+      canvas.addEventListener("pointermove",function(event){
+        if(!state.drag)return;
+        event.preventDefault();var p=coords(event);
+        state.ry+=(p.x-state.lastX)*.012;state.rx+=(p.y-state.lastY)*.012;
+        state.lastX=p.x;state.lastY=p.y;draw();
+      });
+      function stop(event){if(event&&event.cancelable)event.preventDefault();state.drag=false;canvas.style.cursor="grab"}
+      canvas.addEventListener("pointerup",stop);canvas.addEventListener("pointercancel",stop);
+      win.addEventListener("resize",draw,{passive:true});
+      if(win.ResizeObserver)new win.ResizeObserver(draw).observe(container);
+
+      return {
+        removeAllModels:function(){state.atoms=[];state.bonds=[];draw()},
+        addModel:function(xyz){var parsed=parseXYZ(xyz);state.atoms=parsed.atoms;state.bonds=parsed.bonds;state.rx=-.35;state.ry=.55;draw();return{}},
+        setStyle:function(){},
+        zoomTo:function(){draw()},
+        setSpin:function(){},
+        render:function(){draw()},
+        resize:function(){draw()}
+      };
+    }
+
+    document.getElementById("ben-app").addEventListener("load",function(){
+      try{
+        var appWindow=this.contentWindow;
+        appWindow.$3Dmol={createViewer:createViewer};
+        appWindow.console.info("Ben V3: renderizador molecular 3D local ativado.");
+      }catch(error){
+        console.error("Não foi possível ativar o 3D local.",error);
+      }
+    });
+  })();
+  </script>
+</body>
+</html>
