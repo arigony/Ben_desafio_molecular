@@ -110,3 +110,134 @@ H 1.970 -0.210 0.000`
   };
   window.V8_DATA = { productCatalog, stops, models };
 })();
+
+(() => {
+  "use strict";
+
+  function installV8MobileFix() {
+    const view = document.querySelector("#aisle-view");
+    const cart = document.querySelector(".cart-fp");
+    if (!view || !cart || document.querySelector("#v8-mobile-fix")) return;
+
+    const world = document.createElement("div");
+    world.className = "aisle-world";
+    world.setAttribute("aria-hidden", "true");
+    view.prepend(world);
+    view.setAttribute("aria-busy", "false");
+
+    const style = document.createElement("style");
+    style.id = "v8-mobile-fix";
+    style.textContent = `
+      .game-screen,.game-stage,.controls,.nav-pad,.ben-tip,.sector-sign,.game-screen button{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}
+      .aisle-view{background-image:none!important;background:#cfe6df!important;background-size:auto!important;background-position:center!important;transition:none!important;filter:none!important;contain:layout paint;isolation:isolate}
+      .aisle-world{position:absolute;inset:-6%;z-index:0;background-image:var(--aisle-bg,linear-gradient(#cfe6df,#edf6f3));background-size:cover;background-position:center 48%;transform:translate3d(0,0,0) scale(1);transform-origin:50% 52%;transition:transform .34s cubic-bezier(.22,.78,.25,1);will-change:transform;backface-visibility:hidden}
+      .aisle-view.stop-0 .aisle-world{transform:translate3d(0,0,0) scale(1)}
+      .aisle-view.stop-1 .aisle-world{transform:translate3d(-1.5%,1.2%,0) scale(1.10)}
+      .aisle-view.stop-2 .aisle-world{transform:translate3d(1.5%,2.1%,0) scale(1.20)}
+      .aisle-view.stop-3 .aisle-world{transform:translate3d(-1%,3%,0) scale(1.31)}
+      .aisle-view.stop-4 .aisle-world{transform:translate3d(0,4%,0) scale(1.42)}
+      .aisle-view.moving .product-target{opacity:0!important;pointer-events:none}
+      .aisle-view.v8-moving::before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;background:radial-gradient(ellipse at center,transparent 32%,#ffffff2b 70%,#12364b35 100%);animation:v8TravelFlash .34s ease both}
+      @keyframes v8TravelFlash{0%{opacity:0;transform:scale(.96)}45%{opacity:1}100%{opacity:0;transform:scale(1.06)}}
+      .cart-fp{transform:translate3d(-50%,0,0)!important;transform-origin:50% 100%;will-change:transform;backface-visibility:hidden}
+      .cart-fp.v8-forward{animation:v8CartForward .36s cubic-bezier(.22,.78,.25,1)}
+      .cart-fp.v8-back{animation:v8CartBack .36s cubic-bezier(.22,.78,.25,1)}
+      @keyframes v8CartForward{0%{transform:translate3d(-50%,0,0) scale(1)}45%{transform:translate3d(-50%,-14px,0) scale(.96)}100%{transform:translate3d(-50%,0,0) scale(1)}}
+      @keyframes v8CartBack{0%{transform:translate3d(-50%,0,0) scale(1)}45%{transform:translate3d(-50%,9px,0) scale(1.025)}100%{transform:translate3d(-50%,0,0) scale(1)}}
+      .nav-pad button{touch-action:none!important;-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}
+      .nav-pad button.v8-pressed{transform:translateY(3px) scale(.97)!important;box-shadow:0 2px 0 #071923!important;background:#1b526e!important}
+    `;
+    document.head.appendChild(style);
+
+    const stopNumber = () => {
+      const match = Array.from(view.classList).find((name) => /^stop-\d$/.test(name));
+      return match ? Number(match.slice(-1)) : 0;
+    };
+
+    let previousStop = stopNumber();
+    let animationTimer = 0;
+    const updateProgress = () => {
+      const sign = document.querySelector("#sector-sign");
+      if (!sign) return;
+      sign.textContent = `${sign.textContent.replace(/\s*·\s*\d\/4$/, "")} · ${stopNumber()}/4`;
+    };
+    updateProgress();
+
+    new MutationObserver(() => {
+      const nextStop = stopNumber();
+      if (nextStop === previousStop) return;
+      const forward = nextStop > previousStop;
+      previousStop = nextStop;
+      window.clearTimeout(animationTimer);
+      view.classList.add("v8-moving");
+      cart.classList.remove("v8-forward", "v8-back");
+      void cart.offsetWidth;
+      cart.classList.add(forward ? "v8-forward" : "v8-back");
+      view.setAttribute("aria-busy", "true");
+      if (navigator.vibrate) navigator.vibrate(18);
+      animationTimer = window.setTimeout(() => {
+        view.classList.remove("v8-moving");
+        cart.classList.remove("v8-forward", "v8-back");
+        view.setAttribute("aria-busy", "false");
+        updateProgress();
+      }, 370);
+    }).observe(view, { attributes: true, attributeFilter: ["class"] });
+
+    function bindImmediate(button, repeat) {
+      if (!button) return;
+      let active = false;
+      let delayTimer = 0;
+      let repeatTimer = 0;
+      let suppressUntil = 0;
+
+      const trigger = () => button.click();
+      const clear = () => {
+        active = false;
+        suppressUntil = Date.now() + 750;
+        window.clearTimeout(delayTimer);
+        window.clearInterval(repeatTimer);
+        button.classList.remove("v8-pressed");
+      };
+
+      button.addEventListener("pointerdown", (event) => {
+        if (event.pointerType === "mouse" && event.button !== 0) return;
+        event.preventDefault();
+        event.stopPropagation();
+        if (active) return;
+        active = true;
+        button.classList.add("v8-pressed");
+        button.setPointerCapture?.(event.pointerId);
+        trigger();
+        if (repeat) {
+          delayTimer = window.setTimeout(() => {
+            repeatTimer = window.setInterval(trigger, 400);
+          }, 500);
+        }
+      }, { capture: true, passive: false });
+
+      ["pointerup", "pointercancel", "lostpointercapture"].forEach((name) => button.addEventListener(name, clear, true));
+      button.addEventListener("click", (event) => {
+        if (event.isTrusted && Date.now() < suppressUntil) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+        }
+      }, true);
+      button.addEventListener("contextmenu", (event) => event.preventDefault());
+    }
+
+    bindImmediate(document.querySelector("#move-forward"), true);
+    bindImmediate(document.querySelector("#move-back"), true);
+    bindImmediate(document.querySelector("#look-left"), false);
+    bindImmediate(document.querySelector("#look-right"), false);
+
+    document.addEventListener("contextmenu", (event) => {
+      if (event.target.closest(".game-stage,.controls")) event.preventDefault();
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", installV8MobileFix, { once: true });
+  } else {
+    queueMicrotask(installV8MobileFix);
+  }
+})();
